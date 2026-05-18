@@ -1,22 +1,9 @@
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-
-import structlog
 from fastapi import FastAPI
 
-from clinical_ai_api.routers import health
+from clinical_ai_api.api.router import api_router
+from clinical_ai_api.core.errors import register_exception_handlers
+from clinical_ai_api.core.lifespan import lifespan
 from clinical_ai_platform.core.config import get_settings
-from clinical_ai_platform.observability.logging import configure_logging
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    settings = get_settings()
-    configure_logging(settings)
-    logger = structlog.get_logger(__name__)
-    logger.info("api_starting", environment=settings.environment)
-    yield
-    logger.info("api_stopping")
 
 
 def create_app() -> FastAPI:
@@ -29,9 +16,9 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if settings.enable_docs else None,
         lifespan=lifespan,
     )
-    app.include_router(health.router, prefix="/health", tags=["health"])
+    register_exception_handlers(app)
+    app.include_router(api_router)
     return app
 
 
 app = create_app()
-
