@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Request
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,15 +23,19 @@ AsyncSessionDep = Annotated[AsyncSession, Depends(get_session)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 
 
-async def get_request_id(x_request_id: Annotated[str | None, Header()] = None) -> str:
-    return x_request_id or str(uuid4())
+async def get_request_id(
+    request: Request,
+    x_request_id: Annotated[str | None, Header()] = None,
+) -> str:
+    state_request_id = getattr(request.state, "request_id", None)
+    return state_request_id or x_request_id or str(uuid4())
 
 
 RequestIdDep = Annotated[str, Depends(get_request_id)]
 
 
 async def get_cache_service(settings: SettingsDep, redis: RedisDep) -> CacheService:
-    return CacheService(redis=redis, key_prefix=settings.redis_key_prefix)
+    return CacheService(redis=redis, key_prefix=settings.redis.key_prefix)
 
 
 async def get_health_service(settings: SettingsDep, redis: RedisDep) -> HealthService:

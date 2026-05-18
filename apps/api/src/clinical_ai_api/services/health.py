@@ -14,9 +14,9 @@ class HealthService:
         redis_health = await self._check_redis()
         return HealthResponse(
             status="ok",
-            service=self._settings.app_name,
-            version=self._settings.app_version,
-            environment=self._settings.environment,
+            service=self._settings.app.name,
+            version=self._settings.app.version,
+            environment=self._settings.app.environment,
             dependencies={"redis": redis_health},
             meta=ResponseMeta(request_id=request_id),
         )

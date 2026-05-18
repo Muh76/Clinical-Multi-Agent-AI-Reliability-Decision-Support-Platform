@@ -18,9 +18,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     logger.info(
         "api_starting",
-        app_name=settings.app_name,
-        app_version=settings.app_version,
-        environment=settings.environment,
+        app_name=settings.app.name,
+        app_version=settings.app.version,
+        environment=settings.app.environment,
     )
     app.state.settings = settings
     init_database(settings)
@@ -31,4 +31,4 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         await close_redis()
         await close_database()
-        logger.info("api_stopping", app_name=settings.app_name)
+        logger.info("api_stopping", app_name=settings.app.name)

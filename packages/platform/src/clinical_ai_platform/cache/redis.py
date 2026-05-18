@@ -16,11 +16,11 @@ class RedisManager:
 
         resolved_settings = settings or get_settings()
         self._pool = ConnectionPool.from_url(
-            str(resolved_settings.redis_url),
-            max_connections=resolved_settings.redis_max_connections,
-            socket_timeout=resolved_settings.redis_socket_timeout,
-            socket_connect_timeout=resolved_settings.redis_socket_connect_timeout,
-            health_check_interval=resolved_settings.redis_health_check_interval,
+            str(resolved_settings.redis.url),
+            max_connections=resolved_settings.redis.max_connections,
+            socket_timeout=resolved_settings.redis.socket_timeout,
+            socket_connect_timeout=resolved_settings.redis.socket_connect_timeout,
+            health_check_interval=resolved_settings.redis.health_check_interval,
             decode_responses=True,
         )
         self._client = Redis(connection_pool=self._pool)
@@ -61,4 +61,3 @@ def get_redis() -> Redis:
 
 async def ping_redis() -> bool:
     return await redis_manager.ping()
-

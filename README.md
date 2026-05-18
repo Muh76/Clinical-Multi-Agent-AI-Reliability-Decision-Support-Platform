@@ -22,10 +22,15 @@ packages/
     src/clinical_ai_platform/cache/
       redis.py                  Async Redis client manager
       service.py                JSON cache service abstraction
+    src/clinical_ai_platform/core/
+      settings.py               Typed environment-driven configuration
     src/clinical_ai_platform/db/
       base.py                   SQLAlchemy declarative base and mixins
       session.py                Async engine, pool, session factory
       models/                   Patient, clinical case, and audit ORM models
+    src/clinical_ai_platform/observability/
+      logging.py                structlog JSON logging configuration
+      tracing.py                Request, correlation, and agent trace context helpers
   shared/                      Shared contracts and domain primitives
   agents/                      Agent orchestration interfaces
   retrieval/                   Evidence retrieval and indexing pipelines
@@ -63,6 +68,7 @@ The backend uses thin endpoint modules, typed dependency providers, consistent r
 
 Implemented foundations:
 
+- modular Pydantic Settings with environment-specific loading and validation;
 - async FastAPI application factory with lifespan-managed resources;
 - versioned API routing under `/api/v1`;
 - centralized response envelopes and error handling;
@@ -72,6 +78,8 @@ Implemented foundations:
 - async Redis connection manager with pooled connections;
 - Redis-backed JSON cache service abstraction;
 - Redis dependency health reporting through `/health`;
+- structured JSON logging with request and correlation IDs;
+- request tracing middleware with latency and error logging;
 - Docker Compose stack for FastAPI, PostgreSQL, and Redis.
 
 ## Docker Stack
@@ -186,10 +194,13 @@ Important local environment variables are documented in `.env.example`:
 APP_NAME
 APP_VERSION
 ENVIRONMENT
+APP_DEBUG
+APP_SECRET_KEY
 ENABLE_DOCS
 API_HOST
 API_PORT
 API_WORKERS
+CORS_ALLOWED_ORIGINS
 RUN_MIGRATIONS
 POSTGRES_USER
 POSTGRES_PASSWORD
@@ -212,7 +223,43 @@ LOG_LEVEL
 LOG_JSON
 OTEL_SERVICE_NAME
 OTEL_EXPORTER_OTLP_ENDPOINT
+SENTRY_DSN
+METRICS_ENABLED
+TRACING_ENABLED
+LLM_PROVIDER
+LLM_DEFAULT_MODEL
+LLM_API_KEY
+LLM_BASE_URL
+LLM_TIMEOUT_SECONDS
+LLM_MAX_RETRIES
+VECTOR_PROVIDER
+VECTOR_DATABASE_URL
+VECTOR_DATABASE_API_KEY
+VECTOR_COLLECTION_PREFIX
+VECTOR_EMBEDDING_MODEL
+AGENTS_ENABLED
+AGENT_MAX_CONCURRENT_RUNS
+AGENT_RUN_TIMEOUT_SECONDS
+AGENT_MEMORY_TTL_SECONDS
+WORKFLOW_STATE_TTL_SECONDS
 ```
+
+Configuration design notes live in `docs/architecture/configuration.md`.
+
+The configuration layer supports `.env` plus `.env.<ENVIRONMENT>` files when present, but production deployments should inject secrets through the runtime platform or a dedicated secret manager. Secret-bearing settings use Pydantic `SecretStr` and should not be logged or committed.
+
+## Observability
+
+The API emits structured `structlog` events for request start, completion, latency, validation errors, HTTP errors, application errors, service startup, and shutdown.
+
+Trace headers:
+
+```text
+x-request-id
+x-correlation-id
+```
+
+If callers omit these headers, the request middleware generates them and propagates them back in the response. Observability design notes live in `docs/architecture/observability.md`.
 
 ## Design Principles
 

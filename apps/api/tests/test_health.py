@@ -22,11 +22,19 @@ def test_health_endpoint() -> None:
     app = create_app()
     app.dependency_overrides[get_health_service] = lambda: FakeHealthService()
     client = TestClient(app)
-    response = client.get("/health")
+    response = client.get(
+        "/health",
+        headers={
+            "x-request-id": "test-request-id",
+            "x-correlation-id": "test-correlation-id",
+        },
+    )
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-    assert response.json()["meta"]["request_id"] is not None
+    assert response.json()["meta"]["request_id"] == "test-request-id"
     assert response.json()["dependencies"]["redis"]["status"] == "ok"
+    assert response.headers["x-request-id"] == "test-request-id"
+    assert response.headers["x-correlation-id"] == "test-correlation-id"
 
 
 def test_api_v1_patients_endpoint() -> None:

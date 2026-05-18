@@ -5,6 +5,10 @@ from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from clinical_ai_api.schemas.base import ErrorDetail, ErrorResponse, ResponseMeta
+from clinical_ai_platform.observability import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class AppError(Exception):
@@ -21,7 +25,7 @@ class AppError(Exception):
 
 
 def _request_id(request: Request) -> str | None:
-    value = request.headers.get("x-request-id")
+    value = getattr(request.state, "request_id", None) or request.headers.get("x-request-id")
     return value if value else None
 
 
@@ -44,6 +48,13 @@ def _error_response(
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+        log_method = logger.error if exc.status_code >= 500 else logger.warning
+        log_method(
+            "application_error",
+            error_code=exc.code,
+            status_code=exc.status_code,
+            error_message=exc.message,
+        )
         return _error_response(
             request=request,
             status_code=exc.status_code,
@@ -53,6 +64,12 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        log_method = logger.error if exc.status_code >= 500 else logger.warning
+        log_method(
+            "http_error",
+            status_code=exc.status_code,
+            error_message=str(exc.detail),
+        )
         return _error_response(
             request=request,
             status_code=exc.status_code,
@@ -65,6 +82,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: RequestValidationError,
     ) -> JSONResponse:
+        logger.warning(
+            "request_validation_error",
+            validation_error_count=len(exc.errors()),
+        )
         details = [
             ErrorDetail(code="validation_error", message=str(error["msg"]))
             for error in exc.errors()
@@ -79,6 +100,10 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(ValidationError)
     async def pydantic_error_handler(request: Request, exc: ValidationError) -> JSONResponse:
+        logger.error(
+            "response_validation_error",
+            validation_error_count=len(exc.errors()),
+        )
         details = [
             ErrorDetail(code="validation_error", message=str(error["msg"]))
             for error in exc.errors()
@@ -90,4 +115,3 @@ def register_exception_handlers(app: FastAPI) -> None:
             message="Response validation failed.",
             details=details,
         )
-

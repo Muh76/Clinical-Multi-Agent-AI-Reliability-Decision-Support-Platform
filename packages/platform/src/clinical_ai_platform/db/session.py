@@ -11,13 +11,13 @@ _session_factory: async_sessionmaker[AsyncSession] | None = None
 def create_engine(settings: Settings | None = None) -> AsyncEngine:
     resolved_settings = settings or get_settings()
     return create_async_engine(
-        str(resolved_settings.database_url),
+        str(resolved_settings.database.url),
         pool_pre_ping=True,
-        pool_size=resolved_settings.database_pool_size,
-        max_overflow=resolved_settings.database_max_overflow,
-        pool_timeout=resolved_settings.database_pool_timeout,
-        pool_recycle=resolved_settings.database_pool_recycle,
-        echo=resolved_settings.database_echo,
+        pool_size=resolved_settings.database.pool_size,
+        max_overflow=resolved_settings.database.max_overflow,
+        pool_timeout=resolved_settings.database.pool_timeout,
+        pool_recycle=resolved_settings.database.pool_recycle,
+        echo=resolved_settings.database.echo,
     )
 
 
