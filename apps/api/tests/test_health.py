@@ -13,7 +13,41 @@ class FakeHealthService:
             service="test-service",
             version="0.1.0",
             environment="test",
-            dependencies={"redis": DependencyHealth(status="ok")},
+            services={"postgres": "connected", "redis": "connected"},
+            checks={
+                "postgres": DependencyHealth(status="connected"),
+                "redis": DependencyHealth(status="connected"),
+            },
+            meta=ResponseMeta(request_id=request_id),
+        )
+
+    async def get_liveness(self, *, request_id: str | None = None) -> HealthResponse:
+        return HealthResponse(
+            status="healthy",
+            service="test-service",
+            version="0.1.0",
+            environment="test",
+            services={"application": "connected"},
+            checks={"application": DependencyHealth(status="connected")},
+            meta=ResponseMeta(request_id=request_id),
+        )
+
+    async def get_readiness(self, *, request_id: str | None = None) -> HealthResponse:
+        return await self.get_health(request_id=request_id)
+
+
+class FakeUnreadyHealthService(FakeHealthService):
+    async def get_readiness(self, *, request_id: str | None = None) -> HealthResponse:
+        return HealthResponse(
+            status="unhealthy",
+            service="test-service",
+            version="0.1.0",
+            environment="test",
+            services={"postgres": "unavailable", "redis": "connected"},
+            checks={
+                "postgres": DependencyHealth(status="unavailable", detail="ConnectionError"),
+                "redis": DependencyHealth(status="connected"),
+            },
             meta=ResponseMeta(request_id=request_id),
         )
 
@@ -30,11 +64,41 @@ def test_health_endpoint() -> None:
         },
     )
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    assert response.json()["status"] == "healthy"
     assert response.json()["meta"]["request_id"] == "test-request-id"
-    assert response.json()["dependencies"]["redis"]["status"] == "ok"
+    assert response.json()["services"]["postgres"] == "connected"
+    assert response.json()["checks"]["redis"]["status"] == "connected"
     assert response.headers["x-request-id"] == "test-request-id"
     assert response.headers["x-correlation-id"] == "test-correlation-id"
+
+
+def test_liveness_endpoint() -> None:
+    app = create_app()
+    app.dependency_overrides[get_health_service] = lambda: FakeHealthService()
+    client = TestClient(app)
+    response = client.get("/health/live")
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+    assert response.json()["services"]["application"] == "connected"
+
+
+def test_readiness_endpoint() -> None:
+    app = create_app()
+    app.dependency_overrides[get_health_service] = lambda: FakeHealthService()
+    client = TestClient(app)
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    assert response.json()["services"]["postgres"] == "connected"
+
+
+def test_readiness_endpoint_returns_503_when_unhealthy() -> None:
+    app = create_app()
+    app.dependency_overrides[get_health_service] = lambda: FakeUnreadyHealthService()
+    client = TestClient(app)
+    response = client.get("/health/ready")
+    assert response.status_code == 503
+    assert response.json()["status"] == "unhealthy"
+    assert response.json()["services"]["postgres"] == "unavailable"
 
 
 def test_api_v1_patients_endpoint() -> None:

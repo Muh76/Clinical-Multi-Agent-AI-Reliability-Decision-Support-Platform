@@ -1,0 +1,276 @@
+{
+  "disclaimer": "Synthetic development data only. Not real patient data.",
+  "schema_version": "synthetic-clinical-dev-v1",
+  "generation": {
+    "seed": 42,
+    "observations_per_patient": 2,
+    "start_at": "2026-01-01T08:00:00Z"
+  },
+  "patient_count": 3,
+  "records": [
+    {
+      "demographics": {
+        "patient_id": "patient-6536619c-6c5a-5706-8f73-1bdcb49f4491",
+        "synthetic_mrn": "SYN-0042-00001",
+        "age_years": 32,
+        "sex": "other",
+        "race_ethnicity": "synthetic-category-a",
+        "postal_region": "SYN-328"
+      },
+      "vitals": [
+        {
+          "patient_id": "patient-6536619c-6c5a-5706-8f73-1bdcb49f4491",
+          "recorded_at": "2026-01-01T08:00:00Z",
+          "heart_rate_bpm": 80,
+          "spo2_percent": 94,
+          "systolic_bp_mm_hg": 134,
+          "diastolic_bp_mm_hg": 81,
+          "temperature_c": 37.0,
+          "respiratory_rate_bpm": 17
+        },
+        {
+          "patient_id": "patient-6536619c-6c5a-5706-8f73-1bdcb49f4491",
+          "recorded_at": "2026-01-01T16:00:00Z",
+          "heart_rate_bpm": 69,
+          "spo2_percent": 95,
+          "systolic_bp_mm_hg": 138,
+          "diastolic_bp_mm_hg": 82,
+          "temperature_c": 36.9,
+          "respiratory_rate_bpm": 12
+        }
+      ],
+      "labs": [
+        {
+          "patient_id": "patient-6536619c-6c5a-5706-8f73-1bdcb49f4491",
+          "collected_at": "2026-01-01T08:00:00Z",
+          "sodium_mmol_l": 136,
+          "potassium_mmol_l": 4.3,
+          "creatinine_mg_dl": 0.87,
+          "glucose_mg_dl": 153,
+          "hemoglobin_g_dl": 13.4,
+          "wbc_10e3_ul": 6.1,
+          "platelet_10e3_ul": 204
+        }
+      ],
+      "medications": [
+        {
+          "patient_id": "patient-6536619c-6c5a-5706-8f73-1bdcb49f4491",
+          "ordered_at": "2026-01-01T08:00:00Z",
+          "medication": "ceftriaxone",
+          "dose": "1 g",
+          "route": "intravenous",
+          "frequency": "daily",
+          "status": "active"
+        },
+        {
+          "patient_id": "patient-6536619c-6c5a-5706-8f73-1bdcb49f4491",
+          "ordered_at": "2026-01-01T09:00:00Z",
+          "medication": "atorvastatin",
+          "dose": "20 mg",
+          "route": "oral",
+          "frequency": "nightly",
+          "status": "active"
+        }
+      ],
+      "notes": [
+        {
+          "patient_id": "patient-6536619c-6c5a-5706-8f73-1bdcb49f4491",
+          "authored_at": "2026-01-01T10:00:00Z",
+          "note_type": "progress",
+          "condition": "hypertension",
+          "text": "Follow-up assessment for hypertension. Vitals reviewed; mild bilateral ankle edema. Continue schedule outpatient follow-up."
+        }
+      ],
+      "modalities": [
+        "tabular",
+        "time_series",
+        "text"
+      ]
+    },
+    {
+      "demographics": {
+        "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+        "synthetic_mrn": "SYN-0042-00002",
+        "age_years": 51,
+        "sex": "female",
+        "race_ethnicity": "synthetic-category-c",
+        "postal_region": "SYN-570"
+      },
+      "vitals": [
+        {
+          "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+          "recorded_at": "2026-01-01T08:00:00Z",
+          "heart_rate_bpm": 73,
+          "spo2_percent": 95,
+          "systolic_bp_mm_hg": 133,
+          "diastolic_bp_mm_hg": 54,
+          "temperature_c": 37.4,
+          "respiratory_rate_bpm": 19
+        },
+        {
+          "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+          "recorded_at": "2026-01-01T16:00:00Z",
+          "heart_rate_bpm": 68,
+          "spo2_percent": 96,
+          "systolic_bp_mm_hg": 111,
+          "diastolic_bp_mm_hg": 85,
+          "temperature_c": 36.9,
+          "respiratory_rate_bpm": 17
+        }
+      ],
+      "labs": [
+        {
+          "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+          "collected_at": "2026-01-01T08:00:00Z",
+          "sodium_mmol_l": 141,
+          "potassium_mmol_l": 4.3,
+          "creatinine_mg_dl": 1.03,
+          "glucose_mg_dl": 121,
+          "hemoglobin_g_dl": 14.0,
+          "wbc_10e3_ul": 6.0,
+          "platelet_10e3_ul": 203
+        }
+      ],
+      "medications": [
+        {
+          "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+          "ordered_at": "2026-01-01T08:00:00Z",
+          "medication": "atorvastatin",
+          "dose": "20 mg",
+          "route": "oral",
+          "frequency": "nightly",
+          "status": "completed"
+        },
+        {
+          "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+          "ordered_at": "2026-01-01T09:00:00Z",
+          "medication": "lisinopril",
+          "dose": "10 mg",
+          "route": "oral",
+          "frequency": "daily",
+          "status": "completed"
+        },
+        {
+          "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+          "ordered_at": "2026-01-01T10:00:00Z",
+          "medication": "ceftriaxone",
+          "dose": "1 g",
+          "route": "intravenous",
+          "frequency": "daily",
+          "status": "completed"
+        }
+      ],
+      "notes": [
+        {
+          "patient_id": "patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b",
+          "authored_at": "2026-01-01T10:00:00Z",
+          "note_type": "triage",
+          "condition": "postoperative monitoring",
+          "text": "Patient reports fatigue. Exam notable for lungs clear to auscultation. Plan is to monitor respiratory status."
+        }
+      ],
+      "modalities": [
+        "tabular",
+        "time_series",
+        "text"
+      ]
+    },
+    {
+      "demographics": {
+        "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+        "synthetic_mrn": "SYN-0042-00003",
+        "age_years": 66,
+        "sex": "male",
+        "race_ethnicity": "synthetic-category-c",
+        "postal_region": "SYN-432"
+      },
+      "vitals": [
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "recorded_at": "2026-01-01T08:00:00Z",
+          "heart_rate_bpm": 78,
+          "spo2_percent": 98,
+          "systolic_bp_mm_hg": 137,
+          "diastolic_bp_mm_hg": 63,
+          "temperature_c": 36.8,
+          "respiratory_rate_bpm": 18
+        },
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "recorded_at": "2026-01-01T16:00:00Z",
+          "heart_rate_bpm": 85,
+          "spo2_percent": 96,
+          "systolic_bp_mm_hg": 132,
+          "diastolic_bp_mm_hg": 97,
+          "temperature_c": 36.6,
+          "respiratory_rate_bpm": 14
+        }
+      ],
+      "labs": [
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "collected_at": "2026-01-01T08:00:00Z",
+          "sodium_mmol_l": 142,
+          "potassium_mmol_l": 3.9,
+          "creatinine_mg_dl": 0.93,
+          "glucose_mg_dl": 123,
+          "hemoglobin_g_dl": 12.5,
+          "wbc_10e3_ul": 6.8,
+          "platelet_10e3_ul": 138
+        }
+      ],
+      "medications": [
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "ordered_at": "2026-01-01T08:00:00Z",
+          "medication": "atorvastatin",
+          "dose": "20 mg",
+          "route": "oral",
+          "frequency": "nightly",
+          "status": "active"
+        },
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "ordered_at": "2026-01-01T09:00:00Z",
+          "medication": "lisinopril",
+          "dose": "10 mg",
+          "route": "oral",
+          "frequency": "daily",
+          "status": "active"
+        },
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "ordered_at": "2026-01-01T10:00:00Z",
+          "medication": "acetaminophen",
+          "dose": "650 mg",
+          "route": "oral",
+          "frequency": "every 6 hours as needed",
+          "status": "active"
+        },
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "ordered_at": "2026-01-01T11:00:00Z",
+          "medication": "albuterol inhaler",
+          "dose": "90 mcg",
+          "route": "inhaled",
+          "frequency": "as needed",
+          "status": "active"
+        }
+      ],
+      "notes": [
+        {
+          "patient_id": "patient-882614bf-5c8c-57cc-87ce-f1faac2510ce",
+          "authored_at": "2026-01-01T10:00:00Z",
+          "note_type": "triage",
+          "condition": "asthma",
+          "text": "Synthetic note: asthma monitoring. Patient denies acute distress. trend labs and reassess."
+        }
+      ],
+      "modalities": [
+        "tabular",
+        "time_series",
+        "text"
+      ]
+    }
+  ]
+}

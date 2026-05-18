@@ -1,0 +1,4 @@
+patient_id,collected_at,sodium_mmol_l,potassium_mmol_l,creatinine_mg_dl,glucose_mg_dl,hemoglobin_g_dl,wbc_10e3_ul,platelet_10e3_ul
+patient-6536619c-6c5a-5706-8f73-1bdcb49f4491,2026-01-01T08:00:00Z,136,4.3,0.87,153,13.4,6.1,204
+patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b,2026-01-01T08:00:00Z,141,4.3,1.03,121,14.0,6.0,203
+patient-882614bf-5c8c-57cc-87ce-f1faac2510ce,2026-01-01T08:00:00Z,142,3.9,0.93,123,12.5,6.8,138

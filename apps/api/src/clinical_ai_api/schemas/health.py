@@ -1,16 +1,26 @@
+from datetime import UTC, datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
 from clinical_ai_api.schemas.base import ResponseMeta
-from pydantic import BaseModel
+
+HealthStatus = Literal["healthy", "degraded", "unhealthy"]
+DependencyStatus = Literal["connected", "degraded", "unavailable", "skipped"]
 
 
 class DependencyHealth(BaseModel):
-    status: str
+    status: DependencyStatus
     detail: str | None = None
+    latency_ms: float | None = None
 
 
 class HealthResponse(BaseModel):
-    status: str
+    status: HealthStatus
     service: str
     version: str
     environment: str
-    dependencies: dict[str, DependencyHealth]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    services: dict[str, DependencyStatus]
+    checks: dict[str, DependencyHealth]
     meta: ResponseMeta

@@ -1,0 +1,63 @@
+{
+  "disclaimer": "Synthetic development data only. Not real patient data.",
+  "schema_version": "synthetic-clinical-dev-v1",
+  "entities": {
+    "Demographics": [
+      "patient_id",
+      "synthetic_mrn",
+      "age_years",
+      "sex",
+      "race_ethnicity",
+      "postal_region"
+    ],
+    "VitalSign": [
+      "patient_id",
+      "recorded_at",
+      "heart_rate_bpm",
+      "spo2_percent",
+      "systolic_bp_mm_hg",
+      "diastolic_bp_mm_hg",
+      "temperature_c",
+      "respiratory_rate_bpm"
+    ],
+    "LabResult": [
+      "patient_id",
+      "collected_at",
+      "sodium_mmol_l",
+      "potassium_mmol_l",
+      "creatinine_mg_dl",
+      "glucose_mg_dl",
+      "hemoglobin_g_dl",
+      "wbc_10e3_ul",
+      "platelet_10e3_ul"
+    ],
+    "MedicationOrder": [
+      "patient_id",
+      "ordered_at",
+      "medication",
+      "dose",
+      "route",
+      "frequency",
+      "status"
+    ],
+    "ClinicalNote": [
+      "patient_id",
+      "authored_at",
+      "note_type",
+      "condition",
+      "text"
+    ]
+  },
+  "modalities": [
+    "tabular",
+    "time_series",
+    "text"
+  ],
+  "future_modalities": [
+    "waveform",
+    "image",
+    "pdf",
+    "audio",
+    "device_stream"
+  ]
+}

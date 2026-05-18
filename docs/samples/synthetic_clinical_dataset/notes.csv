@@ -1,0 +1,4 @@
+patient_id,authored_at,note_type,condition,text
+patient-6536619c-6c5a-5706-8f73-1bdcb49f4491,2026-01-01T10:00:00Z,progress,hypertension,Follow-up assessment for hypertension. Vitals reviewed; mild bilateral ankle edema. Continue schedule outpatient follow-up.
+patient-ede48b7d-6ae2-509e-877a-db0f3e69db1b,2026-01-01T10:00:00Z,triage,postoperative monitoring,Patient reports fatigue. Exam notable for lungs clear to auscultation. Plan is to monitor respiratory status.
+patient-882614bf-5c8c-57cc-87ce-f1faac2510ce,2026-01-01T10:00:00Z,triage,asthma,Synthetic note: asthma monitoring. Patient denies acute distress. trend labs and reassess.

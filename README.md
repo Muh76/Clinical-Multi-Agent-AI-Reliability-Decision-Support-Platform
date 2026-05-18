@@ -54,6 +54,8 @@ The service exposes infrastructure health outside the versioned API and product 
 
 ```text
 GET  /health
+GET  /health/live
+GET  /health/ready
 GET  /api/v1/patients
 POST /api/v1/safety/assess
 GET  /api/v1/evaluation/runs
@@ -62,7 +64,7 @@ POST /api/v1/evaluation/runs
 
 The backend uses thin endpoint modules, typed dependency providers, consistent response envelopes, centralized exception handling, and a service layer that can later coordinate retrieval, safety critics, evaluation runs, multimodal processing, and AI agent workflows.
 
-`/health` includes dependency status for Redis so orchestration systems can distinguish application availability from cache/connectivity degradation.
+`/health` includes dependency status for PostgreSQL and Redis so orchestration systems can distinguish application availability from dependency degradation. `/health/live` is process-level liveness, while `/health/ready` validates required dependencies before the instance receives traffic.
 
 ## Current Platform Foundations
 
@@ -78,6 +80,7 @@ Implemented foundations:
 - async Redis connection manager with pooled connections;
 - Redis-backed JSON cache service abstraction;
 - Redis dependency health reporting through `/health`;
+- liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
 - request tracing middleware with latency and error logging;
 - Docker Compose stack for FastAPI, PostgreSQL, and Redis.
@@ -139,6 +142,31 @@ make typecheck
 make migrate
 make revision message="add clinical evidence tables"
 ```
+
+## Synthetic Development Data
+
+Generate fictional clinical-looking data for local development:
+
+```bash
+python scripts/generate_synthetic_clinical_dataset.py --patients 25 --output-dir tmp/synthetic_clinical_dataset
+```
+
+The generator exports JSON and CSV files for demographics, vitals, labs, medications, and notes. It is deterministic with a seed and writes a schema file beside the generated data.
+
+Checked-in sample outputs live under:
+
+```text
+docs/samples/synthetic_clinical_dataset/
+  dataset.json
+  patients.csv
+  vitals.csv
+  labs.csv
+  medications.csv
+  notes.csv
+  schema.json
+```
+
+This is synthetic development data only, not real patient data. Design notes live in `docs/architecture/synthetic-data.md`.
 
 ## Database And Migrations
 
@@ -260,6 +288,14 @@ x-correlation-id
 ```
 
 If callers omit these headers, the request middleware generates them and propagates them back in the response. Observability design notes live in `docs/architecture/observability.md`.
+
+## Health Monitoring
+
+Health monitoring includes async PostgreSQL and Redis checks, latency measurements, structured response bodies, degraded-state handling, and separate liveness/readiness semantics.
+
+Health responses include an aggregate status, per-service status, detailed checks, timestamp, version, and request metadata. Readiness returns `503 Service Unavailable` when required dependencies are unavailable.
+
+Health monitoring design notes live in `docs/architecture/health-monitoring.md`.
 
 ## Design Principles
 

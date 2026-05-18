@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import Depends, Header, Request
 from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from clinical_ai_api.services.evaluation import EvaluationService
 from clinical_ai_api.services.health import HealthService
@@ -11,7 +11,7 @@ from clinical_ai_api.services.patients import PatientService
 from clinical_ai_api.services.safety import SafetyService
 from clinical_ai_platform.cache import CacheService, get_redis
 from clinical_ai_platform.core.config import Settings, get_settings
-from clinical_ai_platform.db import get_session
+from clinical_ai_platform.db import get_engine, get_session
 
 
 def get_app_settings() -> Settings:
@@ -20,6 +20,7 @@ def get_app_settings() -> Settings:
 
 SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 AsyncSessionDep = Annotated[AsyncSession, Depends(get_session)]
+AsyncEngineDep = Annotated[AsyncEngine, Depends(get_engine)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 
 
@@ -38,8 +39,12 @@ async def get_cache_service(settings: SettingsDep, redis: RedisDep) -> CacheServ
     return CacheService(redis=redis, key_prefix=settings.redis.key_prefix)
 
 
-async def get_health_service(settings: SettingsDep, redis: RedisDep) -> HealthService:
-    return HealthService(settings=settings, redis=redis)
+async def get_health_service(
+    settings: SettingsDep,
+    engine: AsyncEngineDep,
+    redis: RedisDep,
+) -> HealthService:
+    return HealthService(settings=settings, engine=engine, redis=redis)
 
 
 async def get_patient_service(session: AsyncSessionDep) -> PatientService:
