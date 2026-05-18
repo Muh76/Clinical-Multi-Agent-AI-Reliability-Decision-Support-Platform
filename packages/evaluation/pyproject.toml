@@ -1,0 +1,14 @@
+[project]
+name = "clinical-ai-evaluation"
+version = "0.1.0"
+description = "Reliability evaluation harnesses and metrics"
+requires-python = ">=3.12"
+dependencies = ["clinical-ai-shared"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/clinical_ai_evaluation"]
+
