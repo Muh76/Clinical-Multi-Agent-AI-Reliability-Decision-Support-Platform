@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 
+from clinical_ai_platform.cache import close_redis, init_redis
 from clinical_ai_platform.core.config import get_settings
+from clinical_ai_platform.db import close_database, init_database
 from clinical_ai_platform.observability.logging import configure_logging
 
 
@@ -21,8 +23,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         environment=settings.environment,
     )
     app.state.settings = settings
+    init_database(settings)
+    init_redis(settings)
 
-    yield
-
-    logger.info("api_stopping", app_name=settings.app_name)
-
+    try:
+        yield
+    finally:
+        await close_redis()
+        await close_database()
+        logger.info("api_stopping", app_name=settings.app_name)

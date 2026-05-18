@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from clinical_ai_platform.core.config import get_settings
 from clinical_ai_platform.db.base import Base
+from clinical_ai_platform.db import models  # noqa: F401
 
 config = context.config
 
@@ -60,4 +61,3 @@ else:
     import asyncio
 
     asyncio.run(run_migrations_online())
-

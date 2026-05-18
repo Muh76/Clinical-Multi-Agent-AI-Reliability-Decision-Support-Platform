@@ -18,7 +18,14 @@ apps/
       schemas/                  Request and response models
       services/                 Application service layer
 packages/
-  platform/                    Config, database, logging, observability
+  platform/                    Config, async database, logging, observability
+    src/clinical_ai_platform/cache/
+      redis.py                  Async Redis client manager
+      service.py                JSON cache service abstraction
+    src/clinical_ai_platform/db/
+      base.py                   SQLAlchemy declarative base and mixins
+      session.py                Async engine, pool, session factory
+      models/                   Patient, clinical case, and audit ORM models
   shared/                      Shared contracts and domain primitives
   agents/                      Agent orchestration interfaces
   retrieval/                   Evidence retrieval and indexing pipelines
@@ -49,6 +56,23 @@ POST /api/v1/evaluation/runs
 ```
 
 The backend uses thin endpoint modules, typed dependency providers, consistent response envelopes, centralized exception handling, and a service layer that can later coordinate retrieval, safety critics, evaluation runs, multimodal processing, and AI agent workflows.
+
+`/health` includes dependency status for Redis so orchestration systems can distinguish application availability from cache/connectivity degradation.
+
+## Current Platform Foundations
+
+Implemented foundations:
+
+- async FastAPI application factory with lifespan-managed resources;
+- versioned API routing under `/api/v1`;
+- centralized response envelopes and error handling;
+- SQLAlchemy 2.0 async PostgreSQL engine, pool, session factory, and request-scoped sessions;
+- initial ORM models for `Patient`, `ClinicalCase`, and `AuditLog`;
+- Alembic async migration environment with the first clinical tables migration;
+- async Redis connection manager with pooled connections;
+- Redis-backed JSON cache service abstraction;
+- Redis dependency health reporting through `/health`;
+- Docker Compose stack for FastAPI, PostgreSQL, and Redis.
 
 ## Docker Stack
 
@@ -108,6 +132,52 @@ make migrate
 make revision message="add clinical evidence tables"
 ```
 
+## Database And Migrations
+
+The platform uses SQLAlchemy 2.0 async with `asyncpg`, request-scoped `AsyncSession` dependencies, and Alembic migrations.
+
+Initial ORM models:
+
+- `Patient`
+- `ClinicalCase`
+- `AuditLog`
+
+Initial migration:
+
+```text
+migrations/versions/20260518_0001_initial_clinical_tables.py
+```
+
+Apply migrations:
+
+```bash
+make migrate
+```
+
+Create a new migration after model changes:
+
+```bash
+make revision message="add evaluation run tables"
+```
+
+Database design notes live in `docs/architecture/postgresql.md`.
+
+## Redis
+
+Redis is integrated through an async lifecycle-managed client in `packages/platform`. The API initializes Redis during FastAPI startup, closes it during shutdown, exposes a typed dependency provider, and includes Redis ping status in the health response.
+
+Current Redis foundation:
+
+- async Redis connection pool;
+- env-driven connection timeouts and max connections;
+- request-safe dependency injection;
+- JSON cache service abstraction;
+- health check support.
+
+Planned Redis-backed capabilities include agent memory pointers, workflow state, queues, rate limiting, idempotency keys, retrieval caches, and short-lived evaluation progress.
+
+Redis architecture notes live in `docs/architecture/redis.md`.
+
 ## Environment
 
 Important local environment variables are documented in `.env.example`:
@@ -126,8 +196,18 @@ POSTGRES_PASSWORD
 POSTGRES_DB
 POSTGRES_PORT
 DATABASE_URL
+DATABASE_POOL_SIZE
+DATABASE_MAX_OVERFLOW
+DATABASE_POOL_TIMEOUT
+DATABASE_POOL_RECYCLE
+DATABASE_ECHO
 REDIS_PORT
 REDIS_URL
+REDIS_MAX_CONNECTIONS
+REDIS_SOCKET_TIMEOUT
+REDIS_SOCKET_CONNECT_TIMEOUT
+REDIS_HEALTH_CHECK_INTERVAL
+REDIS_KEY_PREFIX
 LOG_LEVEL
 LOG_JSON
 OTEL_SERVICE_NAME

@@ -1,9 +1,14 @@
 from uuid import uuid4
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from clinical_ai_api.schemas.evaluation import EvaluationRunRequest, EvaluationRunResponse
 
 
 class EvaluationService:
+    def __init__(self, *, session: AsyncSession) -> None:
+        self._session = session
+
     async def list_runs(self) -> list[EvaluationRunResponse]:
         return []
 

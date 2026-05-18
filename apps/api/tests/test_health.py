@@ -1,14 +1,32 @@
 from fastapi.testclient import TestClient
 
+from clinical_ai_api.api.dependencies import get_health_service
 from clinical_ai_api.main import create_app
+from clinical_ai_api.schemas.base import ResponseMeta
+from clinical_ai_api.schemas.health import DependencyHealth, HealthResponse
+
+
+class FakeHealthService:
+    async def get_health(self, *, request_id: str | None = None) -> HealthResponse:
+        return HealthResponse(
+            status="ok",
+            service="test-service",
+            version="0.1.0",
+            environment="test",
+            dependencies={"redis": DependencyHealth(status="ok")},
+            meta=ResponseMeta(request_id=request_id),
+        )
 
 
 def test_health_endpoint() -> None:
-    client = TestClient(create_app())
+    app = create_app()
+    app.dependency_overrides[get_health_service] = lambda: FakeHealthService()
+    client = TestClient(app)
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert response.json()["meta"]["request_id"] is not None
+    assert response.json()["dependencies"]["redis"]["status"] == "ok"
 
 
 def test_api_v1_patients_endpoint() -> None:

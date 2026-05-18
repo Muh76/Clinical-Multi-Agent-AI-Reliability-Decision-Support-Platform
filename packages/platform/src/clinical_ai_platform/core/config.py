@@ -26,7 +26,18 @@ class Settings(BaseSettings):
     database_url: PostgresDsn = Field(
         default="postgresql+asyncpg://clinical_ai:clinical_ai@localhost:5432/clinical_ai"
     )
+    database_pool_size: int = 5
+    database_max_overflow: int = 10
+    database_pool_timeout: int = 30
+    database_pool_recycle: int = 1800
+    database_echo: bool = False
+
     redis_url: RedisDsn = Field(default="redis://localhost:6379/0")
+    redis_max_connections: int = 20
+    redis_socket_timeout: float = 5.0
+    redis_socket_connect_timeout: float = 5.0
+    redis_health_check_interval: int = 30
+    redis_key_prefix: str = "clinical_ai"
 
     log_level: str = "INFO"
     log_json: bool = True
@@ -37,4 +48,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
