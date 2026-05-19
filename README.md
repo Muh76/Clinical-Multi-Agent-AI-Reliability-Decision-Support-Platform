@@ -236,7 +236,17 @@ sentence-transformers, async service boundaries, metadata filtering, and a futur
 interface. It supports PubMed evidence, NICE guidelines, synthetic clinical protocols, local
 policies, and imaging report metadata.
 
+The package also includes a clinical knowledge ingestion pipeline with source loaders, document
+processors, citation tracking, attribution verification, chunking, embedding generation, and
+Qdrant indexing for evidence-grounded RAG workflows.
+
+The clinical retrieval pipeline supports dense search, BM25 lexical search, hybrid fusion,
+cross-encoder reranking, metadata-aware filtering, confidence scoring, citation grounding, and
+evidence packaging for explainable downstream AI workflows.
+
 Vector retrieval architecture notes live in `docs/architecture/vector-retrieval.md`.
+Knowledge ingestion architecture notes live in `docs/architecture/knowledge-ingestion.md`.
+Clinical retrieval pipeline notes live in `docs/architecture/clinical-retrieval-pipeline.md`.
 
 ## Environment
 

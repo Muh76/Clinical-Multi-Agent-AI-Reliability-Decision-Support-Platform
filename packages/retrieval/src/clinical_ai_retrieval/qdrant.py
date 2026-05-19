@@ -122,6 +122,7 @@ def chunk_to_payload(chunk: EvidenceChunk) -> dict[str, object]:
         "document_id": chunk.document_id,
         "text": chunk.text,
         "chunk_index": chunk.chunk_index,
+        "citation": chunk.citation.model_dump(mode="json") if chunk.citation else None,
         "token_estimate": chunk.token_estimate,
         **metadata,
     }
@@ -144,7 +145,15 @@ def payload_metadata(payload: dict[str, object]) -> dict[str, object]:
     return {
         key: value
         for key, value in payload.items()
-        if key not in {"chunk_id", "document_id", "text", "chunk_index", "token_estimate"}
+        if key
+        not in {
+            "chunk_id",
+            "document_id",
+            "text",
+            "chunk_index",
+            "citation",
+            "token_estimate",
+        }
     }
 
 

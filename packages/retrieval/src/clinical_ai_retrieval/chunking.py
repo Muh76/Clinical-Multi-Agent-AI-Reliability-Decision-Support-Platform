@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from clinical_ai_retrieval.schemas import EvidenceChunk, EvidenceDocument
+from clinical_ai_retrieval.schemas import Citation, EvidenceChunk, EvidenceDocument
 
 
 class TextChunker:
@@ -23,6 +23,7 @@ class TextChunker:
                 text=segment,
                 chunk_index=index,
                 metadata=document.metadata,
+                citation=chunk_citation(document, index, segment),
                 token_estimate=max(1, len(segment) // 4),
             )
             for index, segment in enumerate(segments)
@@ -43,3 +44,24 @@ class TextChunker:
             if end == len(clean_text):
                 break
             start = max(0, end - self.overlap_chars)
+
+
+def chunk_citation(document: EvidenceDocument, chunk_index: int, text: str) -> Citation:
+    metadata = document.metadata
+    citation_id = metadata.citation_id or f"{document.document_id}:{chunk_index}"
+    title = metadata.title or metadata.source_id
+    year = f" ({metadata.publication_year})" if metadata.publication_year else ""
+    section = f", {' > '.join(metadata.section_path)}" if metadata.section_path else ""
+    source_label = metadata.source_type.value.replace("_", " ")
+    attribution = f"{title}{year}. {source_label}: {metadata.source_id}{section}."
+    return Citation(
+        citation_id=citation_id,
+        source_type=metadata.source_type,
+        source_id=metadata.source_id,
+        title=metadata.title,
+        url=metadata.url,
+        publication_year=metadata.publication_year,
+        section_path=metadata.section_path,
+        quote=text[:500],
+        attribution_text=metadata.citation_text or attribution,
+    )
