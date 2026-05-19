@@ -13,6 +13,11 @@ x-api-env: &api-env
   LOG_JSON: ${LOG_JSON:-true}
   OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-clinical-ai-api}
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  VECTOR_PROVIDER: ${VECTOR_PROVIDER:-qdrant}
+  VECTOR_DATABASE_URL: ${VECTOR_DATABASE_URL:-http://clinical-ai-qdrant:6333}
+  VECTOR_DATABASE_API_KEY: ${VECTOR_DATABASE_API_KEY:-}
+  VECTOR_COLLECTION_PREFIX: ${VECTOR_COLLECTION_PREFIX:-clinical_ai}
+  VECTOR_EMBEDDING_MODEL: ${VECTOR_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
 
 services:
   clinical-ai-api:
@@ -32,6 +37,8 @@ services:
       clinical-ai-postgres:
         condition: service_healthy
       clinical-ai-redis:
+        condition: service_healthy
+      clinical-ai-qdrant:
         condition: service_healthy
     restart: unless-stopped
     volumes:
@@ -97,9 +104,32 @@ services:
       retries: 12
       start_period: 5s
 
+  clinical-ai-qdrant:
+    container_name: clinical-ai-qdrant
+    image: qdrant/qdrant:v1.9.2
+    ports:
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    restart: unless-stopped
+    volumes:
+      - clinical_ai_qdrant_data:/qdrant/storage
+    networks:
+      - clinical-ai-internal
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail http://127.0.0.1:6333/healthz || exit 1"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
 volumes:
   clinical_ai_postgres_data:
   clinical_ai_redis_data:
+  clinical_ai_qdrant_data:
   clinical_ai_uv_cache:
 
 networks:

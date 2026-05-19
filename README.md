@@ -33,10 +33,10 @@ packages/
       tracing.py                Request, correlation, and agent trace context helpers
   shared/                      Shared contracts and domain primitives
   agents/                      Agent orchestration interfaces
-  retrieval/                   Evidence retrieval and indexing pipelines
+  retrieval/                   Qdrant-backed evidence retrieval and indexing pipelines
   evaluation/                  Reliability and safety evaluation systems
   safety/                      Safety critics and validation policies
-  multimodal/                  Multimodal ingestion and normalization
+  multimodal/                  Multimodal ingestion and patient context processing
 infra/
   docker/                      Service container definitions
   postgres/                    Local PostgreSQL bootstrap
@@ -79,6 +79,10 @@ Implemented foundations:
 - Alembic async migration environment with the first clinical tables migration;
 - async Redis connection manager with pooled connections;
 - Redis-backed JSON cache service abstraction;
+- patient context processing layer for multimodal clinical normalization, validation, missingness,
+  and temporal preparation;
+- Qdrant-backed vector retrieval package with async indexing/search boundaries;
+- sentence-transformers embedding provider with future hosted provider extension points;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -92,6 +96,7 @@ The local Compose stack includes:
 - `clinical-ai-api`: FastAPI application built from `infra/docker/api.Dockerfile`.
 - `clinical-ai-postgres`: PostgreSQL 16 with persistent storage and health checks.
 - `clinical-ai-redis`: Redis 7 with persistent storage and health checks.
+- `clinical-ai-qdrant`: Qdrant vector database for evidence retrieval indexes.
 
 All services run on the `clinical-ai-internal` bridge network. PostgreSQL, Redis, and the API expose developer-friendly host ports through environment variables, while containers communicate by stable internal DNS names.
 
@@ -213,6 +218,25 @@ Current Redis foundation:
 Planned Redis-backed capabilities include agent memory pointers, workflow state, queues, rate limiting, idempotency keys, retrieval caches, and short-lived evaluation progress.
 
 Redis architecture notes live in `docs/architecture/redis.md`.
+
+## Patient Context Processing
+
+The multimodal package includes a patient context processing layer that normalizes vitals, labs,
+medications, demographics, clinical notes, imaging metadata, and timestamps into unified structured
+context for downstream agents. It records missingness explicitly, emits validation findings, builds
+cross-modality timelines, and prepares retrieval, explainability, and safety profiles without acting
+as a diagnosis engine.
+
+Patient context architecture notes live in `docs/architecture/patient-context-processing.md`.
+
+## Vector Retrieval
+
+The retrieval package provides a production-oriented vector retrieval layer using Qdrant,
+sentence-transformers, async service boundaries, metadata filtering, and a future reranking
+interface. It supports PubMed evidence, NICE guidelines, synthetic clinical protocols, local
+policies, and imaging report metadata.
+
+Vector retrieval architecture notes live in `docs/architecture/vector-retrieval.md`.
 
 ## Environment
 
