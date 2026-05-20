@@ -11,10 +11,26 @@ from clinical_ai_agents.contracts import (
     ConfidenceBand,
     ConfidenceScore,
 )
+from clinical_ai_agents.evidence_retrieval import (
+    EvidenceCitationAgentItem,
+    EvidenceCorpusItem,
+    EvidenceRetrievalAgent,
+    EvidenceRetrievalAgentPackage,
+    RetrievedEvidenceAgentItem,
+)
 from clinical_ai_agents.patient_context import (
     ModalitySummary,
     PatientContextAgent,
     PatientContextAgentRepresentation,
+)
+from clinical_ai_agents.risk_analysis import (
+    ContradictionSignal,
+    EscalationIndicator,
+    RiskAnalysisAgent,
+    RiskAnalysisReport,
+    RiskFactor,
+    RiskLevel,
+    TrendSignal,
 )
 
 __all__ = [
@@ -27,8 +43,20 @@ __all__ = [
     "ClinicalAgent",
     "ConfidenceBand",
     "ConfidenceScore",
+    "EvidenceCitationAgentItem",
+    "EvidenceCorpusItem",
+    "EvidenceRetrievalAgent",
+    "EvidenceRetrievalAgentPackage",
     "ModalitySummary",
     "PatientContextAgent",
     "PatientContextAgentRepresentation",
+    "RetrievedEvidenceAgentItem",
+    "ContradictionSignal",
+    "EscalationIndicator",
+    "RiskAnalysisAgent",
+    "RiskAnalysisReport",
+    "RiskFactor",
+    "RiskLevel",
+    "TrendSignal",
 ]
 

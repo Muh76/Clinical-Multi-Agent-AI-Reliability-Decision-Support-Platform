@@ -94,6 +94,10 @@ Implemented foundations:
   Risk Analysis, future Safety Critic, Explainability, and Audit agents;
 - Patient Context Agent implementation for multimodal normalization, missingness handling,
   temporal organization, confidence metadata, and modality fusion preparation;
+- Evidence Retrieval Agent implementation for hybrid retrieval orchestration, reranking,
+  citation preservation, confidence scoring, and explainability-ready evidence packages;
+- Risk Analysis Agent implementation for structured risk scoring, temporal trend analysis,
+  contradiction detection, escalation indicators, uncertainty metadata, and explainable outputs;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -272,6 +276,8 @@ Retrieval evaluation framework notes live in `docs/architecture/retrieval-evalua
 End-to-end evidence workflow notes live in `docs/architecture/end-to-end-evidence-workflow.md`.
 Agent orchestration foundation notes live in `docs/architecture/agent-orchestration-foundation.md`.
 Patient Context Agent notes live in `docs/architecture/patient-context-agent.md`.
+Evidence Retrieval Agent notes live in `docs/architecture/evidence-retrieval-agent.md`.
+Risk Analysis Agent notes live in `docs/architecture/risk-analysis-agent.md`.
 
 ## Environment
 
