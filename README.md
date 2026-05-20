@@ -90,6 +90,10 @@ Implemented foundations:
   hallucination risk, retrieval robustness, confidence calibration, and evaluation logging;
 - first end-to-end evidence grounding workflow for patient context processing, evidence retrieval,
   reranking, citation packaging, confidence scoring, and workflow tracing;
+- foundational agent orchestration contracts for traceable Patient Context, Evidence Retrieval,
+  Risk Analysis, future Safety Critic, Explainability, and Audit agents;
+- Patient Context Agent implementation for multimodal normalization, missingness handling,
+  temporal organization, confidence metadata, and modality fusion preparation;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -266,6 +270,8 @@ Clinical retrieval pipeline notes live in `docs/architecture/clinical-retrieval-
 PubMed evidence retrieval notes live in `docs/architecture/pubmed-evidence-retrieval.md`.
 Retrieval evaluation framework notes live in `docs/architecture/retrieval-evaluation-framework.md`.
 End-to-end evidence workflow notes live in `docs/architecture/end-to-end-evidence-workflow.md`.
+Agent orchestration foundation notes live in `docs/architecture/agent-orchestration-foundation.md`.
+Patient Context Agent notes live in `docs/architecture/patient-context-agent.md`.
 
 ## Environment
 
