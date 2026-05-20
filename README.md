@@ -83,6 +83,10 @@ Implemented foundations:
   and temporal preparation;
 - Qdrant-backed vector retrieval package with async indexing/search boundaries;
 - sentence-transformers embedding provider with future hosted provider extension points;
+- PubMed evidence retrieval architecture for abstract normalization, citation preservation,
+  metadata extraction, and retrieval-ready biomedical indexing;
+- clinical retrieval evaluation framework for evidence reliability, citation grounding,
+  hallucination risk, retrieval robustness, confidence calibration, and evaluation logging;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -244,9 +248,19 @@ The clinical retrieval pipeline supports dense search, BM25 lexical search, hybr
 cross-encoder reranking, metadata-aware filtering, confidence scoring, citation grounding, and
 evidence packaging for explainable downstream AI workflows.
 
+PubMed integration design covers ingestion architecture, abstract processing, biomedical metadata,
+citation integrity, retrieval optimization, observability, and support for hallucination detection
+and future Safety Critic validation.
+
+The retrieval evaluation framework covers evidence reliability evaluation, citation faithfulness,
+grounding consistency, hallucination risk, retrieval/reranking metrics, synthetic test cases,
+contradictory evidence scenarios, confidence scoring, and structured evaluation logs.
+
 Vector retrieval architecture notes live in `docs/architecture/vector-retrieval.md`.
 Knowledge ingestion architecture notes live in `docs/architecture/knowledge-ingestion.md`.
 Clinical retrieval pipeline notes live in `docs/architecture/clinical-retrieval-pipeline.md`.
+PubMed evidence retrieval notes live in `docs/architecture/pubmed-evidence-retrieval.md`.
+Retrieval evaluation framework notes live in `docs/architecture/retrieval-evaluation-framework.md`.
 
 ## Environment
 
