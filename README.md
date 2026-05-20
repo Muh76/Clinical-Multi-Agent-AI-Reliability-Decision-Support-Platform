@@ -60,6 +60,7 @@ GET  /api/v1/patients
 POST /api/v1/safety/assess
 GET  /api/v1/evaluation/runs
 POST /api/v1/evaluation/runs
+POST /api/v1/workflows/evidence-grounding
 ```
 
 The backend uses thin endpoint modules, typed dependency providers, consistent response envelopes, centralized exception handling, and a service layer that can later coordinate retrieval, safety critics, evaluation runs, multimodal processing, and AI agent workflows.
@@ -87,6 +88,8 @@ Implemented foundations:
   metadata extraction, and retrieval-ready biomedical indexing;
 - clinical retrieval evaluation framework for evidence reliability, citation grounding,
   hallucination risk, retrieval robustness, confidence calibration, and evaluation logging;
+- first end-to-end evidence grounding workflow for patient context processing, evidence retrieval,
+  reranking, citation packaging, confidence scoring, and workflow tracing;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -232,6 +235,7 @@ cross-modality timelines, and prepares retrieval, explainability, and safety pro
 as a diagnosis engine.
 
 Patient context architecture notes live in `docs/architecture/patient-context-processing.md`.
+MIMIC-IV preprocessing architecture notes live in `docs/architecture/mimic-iv-processing.md`.
 
 ## Vector Retrieval
 
@@ -261,6 +265,7 @@ Knowledge ingestion architecture notes live in `docs/architecture/knowledge-inge
 Clinical retrieval pipeline notes live in `docs/architecture/clinical-retrieval-pipeline.md`.
 PubMed evidence retrieval notes live in `docs/architecture/pubmed-evidence-retrieval.md`.
 Retrieval evaluation framework notes live in `docs/architecture/retrieval-evaluation-framework.md`.
+End-to-end evidence workflow notes live in `docs/architecture/end-to-end-evidence-workflow.md`.
 
 ## Environment
 

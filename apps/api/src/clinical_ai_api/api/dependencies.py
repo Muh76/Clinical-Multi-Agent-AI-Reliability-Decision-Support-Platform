@@ -9,6 +9,7 @@ from clinical_ai_api.services.evaluation import EvaluationService
 from clinical_ai_api.services.health import HealthService
 from clinical_ai_api.services.patients import PatientService
 from clinical_ai_api.services.safety import SafetyService
+from clinical_ai_api.services.workflows import EvidenceGroundingWorkflowService
 from clinical_ai_platform.cache import CacheService, get_redis
 from clinical_ai_platform.core.config import Settings, get_settings
 from clinical_ai_platform.db import get_engine, get_session
@@ -59,8 +60,13 @@ async def get_evaluation_service(session: AsyncSessionDep) -> EvaluationService:
     return EvaluationService(session=session)
 
 
+async def get_workflow_service(session: AsyncSessionDep) -> EvidenceGroundingWorkflowService:
+    return EvidenceGroundingWorkflowService(session=session)
+
+
 HealthServiceDep = Annotated[HealthService, Depends(get_health_service)]
 CacheServiceDep = Annotated[CacheService, Depends(get_cache_service)]
 PatientServiceDep = Annotated[PatientService, Depends(get_patient_service)]
 SafetyServiceDep = Annotated[SafetyService, Depends(get_safety_service)]
 EvaluationServiceDep = Annotated[EvaluationService, Depends(get_evaluation_service)]
+WorkflowServiceDep = Annotated[EvidenceGroundingWorkflowService, Depends(get_workflow_service)]
