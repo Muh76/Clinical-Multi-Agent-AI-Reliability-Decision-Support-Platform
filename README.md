@@ -98,6 +98,10 @@ Implemented foundations:
   citation preservation, confidence scoring, and explainability-ready evidence packages;
 - Risk Analysis Agent implementation for structured risk scoring, temporal trend analysis,
   contradiction detection, escalation indicators, uncertainty metadata, and explainable outputs;
+- async agent orchestration layer for Patient Context -> Evidence Retrieval -> Risk Analysis
+  workflows with shared state, trace propagation, structured graph outputs, and failure handling;
+- explainable structured output schemas for evidence attribution, confidence visibility, modality
+  contributions, workflow trace linkage, citation formatting, and redacted observability payloads;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -278,6 +282,8 @@ Agent orchestration foundation notes live in `docs/architecture/agent-orchestrat
 Patient Context Agent notes live in `docs/architecture/patient-context-agent.md`.
 Evidence Retrieval Agent notes live in `docs/architecture/evidence-retrieval-agent.md`.
 Risk Analysis Agent notes live in `docs/architecture/risk-analysis-agent.md`.
+Agent orchestration layer notes live in `docs/architecture/agent-orchestration-layer.md`.
+Explainable structured output notes live in `docs/architecture/explainable-structured-outputs.md`.
 
 ## Environment
 
