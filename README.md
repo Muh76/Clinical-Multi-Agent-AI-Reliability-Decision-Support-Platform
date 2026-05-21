@@ -102,6 +102,10 @@ Implemented foundations:
   workflows with shared state, trace propagation, structured graph outputs, and failure handling;
 - explainable structured output schemas for evidence attribution, confidence visibility, modality
   contributions, workflow trace linkage, citation formatting, and redacted observability payloads;
+- agent observability and tracing schemas for execution order, latency breakdowns, workflow graph
+  metadata, token usage abstraction, failure analysis, and future Langfuse integration;
+- fully orchestrated end-to-end reliability workflow runner that chains Patient Context, Evidence
+  Retrieval, and Risk Analysis agents into an explainable structured output with workflow traces;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -284,6 +288,8 @@ Evidence Retrieval Agent notes live in `docs/architecture/evidence-retrieval-age
 Risk Analysis Agent notes live in `docs/architecture/risk-analysis-agent.md`.
 Agent orchestration layer notes live in `docs/architecture/agent-orchestration-layer.md`.
 Explainable structured output notes live in `docs/architecture/explainable-structured-outputs.md`.
+Agent observability and tracing notes live in `docs/architecture/agent-observability-tracing.md`.
+Fully orchestrated workflow notes live in `docs/architecture/fully-orchestrated-end-to-end-workflow.md`.
 
 ## Environment
 
