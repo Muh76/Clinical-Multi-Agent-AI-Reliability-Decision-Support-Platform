@@ -114,6 +114,10 @@ Implemented foundations:
   analysis, source trust scoring, explainable verification reports, and escalation support;
 - uncertainty scoring system for retrieval quality, evidence grounding, modality completeness,
   risk stability, contradictions, temporal consistency, calibration notes, and escalation metadata;
+- enterprise escalation logic engine for policy-driven thresholds, structured escalation events,
+  workflow interruption decisions, human-review requests, audit metadata, and observability hooks;
+- safety evaluation framework for hallucination, grounding, escalation, uncertainty, contradiction,
+  unsupported-claim, retrieval-corruption, and robustness benchmarking;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -302,6 +306,8 @@ Safety Critic architecture notes live in `docs/architecture/safety-critic-archit
 Hallucination detection engine notes live in `docs/architecture/hallucination-detection-engine.md`.
 Evidence Verification Layer notes live in `docs/architecture/evidence-verification-layer.md`.
 Uncertainty scoring system notes live in `docs/architecture/uncertainty-scoring-system.md`.
+Escalation logic engine notes live in `docs/architecture/escalation-logic-engine.md`.
+Safety evaluation framework notes live in `docs/architecture/safety-evaluation-framework.md`.
 
 ## Environment
 

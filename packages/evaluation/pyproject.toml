@@ -3,7 +3,7 @@ name = "clinical-ai-evaluation"
 version = "0.1.0"
 description = "Reliability evaluation harnesses and metrics"
 requires-python = ">=3.12"
-dependencies = ["clinical-ai-shared"]
+dependencies = ["clinical-ai-shared", "pydantic>=2.7.0"]
 
 [build-system]
 requires = ["hatchling"]
