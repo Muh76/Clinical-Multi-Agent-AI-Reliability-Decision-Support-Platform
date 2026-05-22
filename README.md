@@ -106,6 +106,10 @@ Implemented foundations:
   metadata, token usage abstraction, failure analysis, and future Langfuse integration;
 - fully orchestrated end-to-end reliability workflow runner that chains Patient Context, Evidence
   Retrieval, and Risk Analysis agents into an explainable structured output with workflow traces;
+- Safety Critic architecture for hallucination detection, unsupported claim detection, evidence
+  verification, uncertainty analysis, escalation logic, policy enforcement, and reliability validation;
+- hallucination detection engine for clinical evidence-grounded validation of unsupported claims,
+  fabricated or missing citations, low grounding, contradictions, and retrieval-generation mismatch;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -290,6 +294,8 @@ Agent orchestration layer notes live in `docs/architecture/agent-orchestration-l
 Explainable structured output notes live in `docs/architecture/explainable-structured-outputs.md`.
 Agent observability and tracing notes live in `docs/architecture/agent-observability-tracing.md`.
 Fully orchestrated workflow notes live in `docs/architecture/fully-orchestrated-end-to-end-workflow.md`.
+Safety Critic architecture notes live in `docs/architecture/safety-critic-architecture.md`.
+Hallucination detection engine notes live in `docs/architecture/hallucination-detection-engine.md`.
 
 ## Environment
 

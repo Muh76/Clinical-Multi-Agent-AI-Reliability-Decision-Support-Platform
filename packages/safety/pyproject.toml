@@ -3,7 +3,7 @@ name = "clinical-ai-safety"
 version = "0.1.0"
 description = "Safety critics, validation policies, and risk controls"
 requires-python = ">=3.12"
-dependencies = ["clinical-ai-shared"]
+dependencies = ["clinical-ai-shared", "pydantic>=2.7.0"]
 
 [build-system]
 requires = ["hatchling"]
