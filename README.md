@@ -110,6 +110,10 @@ Implemented foundations:
   verification, uncertainty analysis, escalation logic, policy enforcement, and reliability validation;
 - hallucination detection engine for clinical evidence-grounded validation of unsupported claims,
   fabricated or missing citations, low grounding, contradictions, and retrieval-generation mismatch;
+- Evidence Verification Layer for claim-evidence matching, citation traceability, contradiction
+  analysis, source trust scoring, explainable verification reports, and escalation support;
+- uncertainty scoring system for retrieval quality, evidence grounding, modality completeness,
+  risk stability, contradictions, temporal consistency, calibration notes, and escalation metadata;
 - Redis dependency health reporting through `/health`;
 - liveness and readiness endpoints for container orchestration;
 - structured JSON logging with request and correlation IDs;
@@ -296,6 +300,8 @@ Agent observability and tracing notes live in `docs/architecture/agent-observabi
 Fully orchestrated workflow notes live in `docs/architecture/fully-orchestrated-end-to-end-workflow.md`.
 Safety Critic architecture notes live in `docs/architecture/safety-critic-architecture.md`.
 Hallucination detection engine notes live in `docs/architecture/hallucination-detection-engine.md`.
+Evidence Verification Layer notes live in `docs/architecture/evidence-verification-layer.md`.
+Uncertainty scoring system notes live in `docs/architecture/uncertainty-scoring-system.md`.
 
 ## Environment
 
