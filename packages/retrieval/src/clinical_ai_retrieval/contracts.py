@@ -1,5 +1,6 @@
 from typing import Protocol
 
+from clinical_ai_retrieval.context import RetrievalContext
 from clinical_ai_retrieval.schemas import (
     EvidenceDocument,
     EvidencePackage,
@@ -9,9 +10,10 @@ from clinical_ai_retrieval.schemas import (
     RetrievalQuery,
     RetrievalResult,
 )
+from clinical_ai_retrieval.retrievers.types import RetrieverOutput
 
 
-class EvidenceRetriever(Protocol):
+class LegacyEvidenceRetriever(Protocol):
     async def retrieve(self, query: str, limit: int = 10) -> list[str]:
         """Retrieve evidence references relevant to the query."""
 
@@ -21,8 +23,13 @@ class VectorEvidenceRetriever(Protocol):
         """Retrieve ranked evidence chunks with provenance and metadata."""
 
 
+class Retriever(Protocol):
+    async def retrieve_candidates(self, context: RetrievalContext) -> RetrieverOutput:
+        """Return candidate retrieval results for downstream packaging."""
+
+
 class EvidencePackager(Protocol):
-    async def retrieve_evidence(self, query: RetrievalQuery) -> EvidencePackage:
+    async def retrieve_evidence(self, context: RetrievalContext) -> EvidencePackage:
         """Retrieve, score, rerank, attribute, and package clinical evidence."""
 
 

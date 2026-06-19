@@ -16,8 +16,8 @@ from clinical_ai_agents import (
 from clinical_ai_multimodal.patient_context import PatientContextProcessor
 from clinical_ai_platform.core.config import Settings
 from clinical_ai_platform.core.settings import VectorProvider
-from clinical_ai_retrieval.factory import build_retrieval_service
-from clinical_ai_retrieval.service import VectorRetrievalService
+from clinical_ai_retrieval.factory import build_local_retrieval_service, build_retrieval_service
+from clinical_ai_retrieval.retrieval_service import RetrievalService
 from clinical_ai_safety import HumanApprovalWorkflowEngine
 
 logger = structlog.get_logger(__name__)
@@ -47,8 +47,13 @@ class AgentContainer:
     retrieval_mode: RetrievalMode
     orchestrator: AgentWorkflowOrchestrator
     safety_aware_runner: SafetyAwareClinicalWorkflowRunner
-    vector_retrieval_service: VectorRetrievalService | None
+    retrieval_service: RetrievalService
     _qdrant_close: object | None = None
+
+    @property
+    def vector_retrieval_service(self) -> RetrievalService:
+        """Backward-compatible alias for the unified retrieval service."""
+        return self.retrieval_service
 
     async def close(self) -> None:
         if self._qdrant_close is not None and hasattr(self._qdrant_close, "close"):
@@ -60,7 +65,7 @@ def build_agent_container(settings: Settings) -> AgentContainer:
         logger.warning("agents_disabled", message="Agent workflow runners are disabled by configuration.")
         return _build_disabled_container()
 
-    vector_retrieval_service: VectorRetrievalService | None = None
+    retrieval_service = build_local_retrieval_service()
     qdrant_store = None
     retrieval_mode: RetrievalMode = "local"
 
@@ -68,19 +73,19 @@ def build_agent_container(settings: Settings) -> AgentContainer:
     if vector_settings.provider == VectorProvider.QDRANT:
         if vector_settings.url is None:
             raise ValueError("VECTOR_DATABASE_URL is required when VECTOR_PROVIDER=qdrant")
-        vector_retrieval_service = build_retrieval_service(
+        retrieval_service = build_retrieval_service(
             url=vector_settings.url,
             collection_prefix=vector_settings.collection_prefix,
             model_name=vector_settings.embedding_model,
             api_key=vector_settings.api_key,
             enable_reranker=True,
         )
-        qdrant_store = vector_retrieval_service.vector_store
+        qdrant_store = retrieval_service.vector_store
         retrieval_mode = "qdrant"
 
     processor = PatientContextProcessor()
     patient_context_agent = PatientContextAgent(processor=processor)
-    evidence_retrieval_agent = EvidenceRetrievalAgent(retriever=vector_retrieval_service)
+    evidence_retrieval_agent = EvidenceRetrievalAgent(retrieval_service=retrieval_service)
     risk_analysis_agent = RiskAnalysisAgent()
     orchestrator = AgentWorkflowOrchestrator(
         patient_context_agent=patient_context_agent,
@@ -106,7 +111,7 @@ def build_agent_container(settings: Settings) -> AgentContainer:
         retrieval_mode=retrieval_mode,
         orchestrator=orchestrator,
         safety_aware_runner=safety_aware_runner,
-        vector_retrieval_service=vector_retrieval_service,
+        retrieval_service=retrieval_service,
         _qdrant_close=qdrant_store,
     )
 
@@ -114,8 +119,9 @@ def build_agent_container(settings: Settings) -> AgentContainer:
 async def warmup_agent_container(container: AgentContainer) -> None:
     if not container.agents_enabled:
         return
-    if container.vector_retrieval_service is not None:
-        await container.vector_retrieval_service.vector_store.ensure_collection()
+    vector_store = container.retrieval_service.vector_store
+    if vector_store is not None:
+        await vector_store.ensure_collection()
         logger.info("agent_container_qdrant_warmup_complete")
 
 
@@ -126,7 +132,10 @@ async def close_agent_container(container: AgentContainer | None) -> None:
 
 
 def _build_disabled_container() -> AgentContainer:
-    orchestrator = AgentWorkflowOrchestrator()
+    retrieval_service = build_local_retrieval_service()
+    orchestrator = AgentWorkflowOrchestrator(
+        evidence_retrieval_agent=EvidenceRetrievalAgent(retrieval_service=retrieval_service),
+    )
     runner = SafetyAwareClinicalWorkflowRunner(
         base_runner=EndToEndClinicalReliabilityWorkflowRunner(orchestrator=orchestrator),
     )
@@ -135,5 +144,5 @@ def _build_disabled_container() -> AgentContainer:
         retrieval_mode="local",
         orchestrator=orchestrator,
         safety_aware_runner=runner,
-        vector_retrieval_service=None,
+        retrieval_service=retrieval_service,
     )

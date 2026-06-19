@@ -97,9 +97,11 @@ def from_safety_aware_output(
         retrieval_metadata=RetrievalMetadataResponse(
             query=retrieval_query,
             retrieval_mode=_retrieval_mode_label(base, retrieval_mode),
-            candidate_count=len(payload.evidence_corpus),
+            candidate_count=_candidate_count(payload, base),
             retrieved_count=len(evidence),
-            reranked=bool(payload.enable_reranking),
+            reranked=bool(base.explainability.get("reranked"))
+            if isinstance(base.explainability, dict)
+            else bool(payload.enable_reranking),
             top_k=payload.top_k,
             context_id=context_id,
             patient_id=patient_id,
@@ -257,9 +259,26 @@ def _retrieval_query_from_output(base_output: Any) -> str | None:
     return None
 
 
+def _candidate_count(payload: GroundedEvidenceWorkflowRequest, base_output: Any) -> int:
+    if payload.evidence_corpus:
+        return len(payload.evidence_corpus)
+    explainability = base_output.explainability
+    if isinstance(explainability, dict):
+        for item in explainability.get("reasoning_metadata", []):
+            if not isinstance(item, dict) or item.get("reasoning_id") != "evidence.retrieval":
+                continue
+            summary = str(item.get("summary", ""))
+            if "candidate" in summary.lower():
+                return max(len(base_output.retrieved_evidence), 0)
+    return 0
+
+
 def _retrieval_mode_label(base_output: Any, fallback: str) -> str:
     explainability = base_output.explainability
     if isinstance(explainability, dict):
+        backend = explainability.get("retrieval_backend")
+        if backend:
+            return str(backend)
         structured = explainability.get("structured_payload", {})
         if isinstance(structured, dict) and structured.get("retrieval_mode"):
             return str(structured["retrieval_mode"])
@@ -285,7 +304,12 @@ def _map_evidence_item(item: dict[str, Any]) -> RetrievedEvidenceResponse:
             or citation_id
         ),
     )
-    retrieval_score = float(scoring.get("retrieval", item.get("score", 0.0)))
+    retrieval_score = float(
+        scoring.get("retrieval")
+        or scoring.get("bm25")
+        or scoring.get("dense")
+        or item.get("score", 0.0)
+    )
     rerank_score = scoring.get("rerank")
     return RetrievedEvidenceResponse(
         rank=int(item.get("rank", 1)),

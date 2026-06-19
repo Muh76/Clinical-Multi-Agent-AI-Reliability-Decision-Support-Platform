@@ -33,6 +33,11 @@ class IngestionStatus(StrEnum):
     FAILED = "failed"
 
 
+class RetrievalBackend(StrEnum):
+    LOCAL_CORPUS = "local_corpus"
+    QDRANT = "qdrant"
+
+
 class RetrievalMode(StrEnum):
     DENSE = "dense"
     BM25 = "bm25"
@@ -185,6 +190,7 @@ class RetrievalEvidenceItem(RetrievalModel):
 class RetrievalDiagnostics(RetrievalModel):
     mode: RetrievalMode
     fusion_strategy: FusionStrategy
+    backend: RetrievalBackend = RetrievalBackend.LOCAL_CORPUS
     dense_result_count: int = Field(default=0, ge=0)
     bm25_result_count: int = Field(default=0, ge=0)
     reranked: bool = False
