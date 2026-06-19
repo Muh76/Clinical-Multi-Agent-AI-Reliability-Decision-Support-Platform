@@ -8,6 +8,7 @@ dependencies = [
   "clinical-ai-multimodal",
   "clinical-ai-platform",
   "clinical-ai-retrieval",
+  "clinical-ai-safety",
   "pydantic>=2.7.0"
 ]
 

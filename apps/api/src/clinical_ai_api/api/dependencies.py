@@ -5,6 +5,8 @@ from fastapi import Depends, Header, Request
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from clinical_ai_agents import SafetyAwareClinicalWorkflowRunner
+from clinical_ai_api.core.agent_container import AgentContainer
 from clinical_ai_api.services.evaluation import EvaluationService
 from clinical_ai_api.services.health import HealthService
 from clinical_ai_api.services.patients import PatientService
@@ -36,6 +38,23 @@ async def get_request_id(
 RequestIdDep = Annotated[str, Depends(get_request_id)]
 
 
+def get_agent_container(request: Request) -> AgentContainer:
+    container = getattr(request.app.state, "agent_container", None)
+    if container is None:
+        raise RuntimeError("AgentContainer has not been initialized.")
+    return container
+
+
+AgentContainerDep = Annotated[AgentContainer, Depends(get_agent_container)]
+
+
+def get_safety_aware_runner(container: AgentContainerDep) -> SafetyAwareClinicalWorkflowRunner:
+    return container.safety_aware_runner
+
+
+SafetyAwareRunnerDep = Annotated[SafetyAwareClinicalWorkflowRunner, Depends(get_safety_aware_runner)]
+
+
 async def get_cache_service(settings: SettingsDep, redis: RedisDep) -> CacheService:
     return CacheService(redis=redis, key_prefix=settings.redis.key_prefix)
 
@@ -60,8 +79,16 @@ async def get_evaluation_service(session: AsyncSessionDep) -> EvaluationService:
     return EvaluationService(session=session)
 
 
-async def get_workflow_service(session: AsyncSessionDep) -> EvidenceGroundingWorkflowService:
-    return EvidenceGroundingWorkflowService(session=session)
+async def get_workflow_service(
+    session: AsyncSessionDep,
+    container: AgentContainerDep,
+) -> EvidenceGroundingWorkflowService:
+    return EvidenceGroundingWorkflowService(
+        session=session,
+        runner=container.safety_aware_runner,
+        agents_enabled=container.agents_enabled,
+        retrieval_mode=container.retrieval_mode,
+    )
 
 
 HealthServiceDep = Annotated[HealthService, Depends(get_health_service)]

@@ -23,6 +23,12 @@ from clinical_ai_agents.end_to_end import (
     EndToEndWorkflowOutput,
     EndToEndWorkflowRequest,
 )
+from clinical_ai_agents.safety_aware_workflow import (
+    SafetyAwareClinicalWorkflowRunner,
+    SafetyAwareWorkflowOutput,
+    SafetyAwareWorkflowRequest,
+    SafetyCriticEvaluation,
+)
 from clinical_ai_agents.observability import (
     AgentExecutionLogger,
     AgentExecutionTrace,
@@ -110,6 +116,10 @@ __all__ = [
     "RiskAnalysisReport",
     "RiskFactor",
     "RiskLevel",
+    "SafetyAwareClinicalWorkflowRunner",
+    "SafetyAwareWorkflowOutput",
+    "SafetyAwareWorkflowRequest",
+    "SafetyCriticEvaluation",
     "TokenUsage",
     "TrendSignal",
     "langfuse_trace_payload",

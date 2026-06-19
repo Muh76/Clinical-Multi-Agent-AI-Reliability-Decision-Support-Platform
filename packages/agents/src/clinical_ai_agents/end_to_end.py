@@ -41,6 +41,7 @@ class EndToEndWorkflowRequest(BaseModel):
     filters: dict[str, Any] = Field(default_factory=dict)
     top_k: int = Field(default=10, ge=1, le=100)
     candidate_limit: int = Field(default=50, ge=1, le=500)
+    rerank: bool = True
     metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
 
@@ -130,6 +131,7 @@ def workflow_payload(request: EndToEndWorkflowRequest) -> dict[str, Any]:
         "filters": request.filters,
         "top_k": request.top_k,
         "candidate_limit": request.candidate_limit,
+        "rerank": request.rerank,
     }
 
 

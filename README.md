@@ -116,6 +116,11 @@ Implemented foundations:
   risk stability, contradictions, temporal consistency, calibration notes, and escalation metadata;
 - enterprise escalation logic engine for policy-driven thresholds, structured escalation events,
   workflow interruption decisions, human-review requests, audit metadata, and observability hooks;
+- human approval workflow layer for review checkpoints, explainable reviewer context, approval and
+  rejection decisions, audit events, trace linkage, and human-in-the-loop release control;
+- fully safety-aware end-to-end workflow that chains patient context, evidence retrieval, risk
+  analysis, Safety Critic-style evaluation, hallucination detection, evidence verification,
+  uncertainty scoring, escalation, human approval checkpointing, and explainable structured output;
 - safety evaluation framework for hallucination, grounding, escalation, uncertainty, contradiction,
   unsupported-claim, retrieval-corruption, and robustness benchmarking;
 - Redis dependency health reporting through `/health`;
@@ -307,6 +312,8 @@ Hallucination detection engine notes live in `docs/architecture/hallucination-de
 Evidence Verification Layer notes live in `docs/architecture/evidence-verification-layer.md`.
 Uncertainty scoring system notes live in `docs/architecture/uncertainty-scoring-system.md`.
 Escalation logic engine notes live in `docs/architecture/escalation-logic-engine.md`.
+Human approval workflow notes live in `docs/architecture/human-approval-workflow-layer.md`.
+Safety-aware end-to-end workflow notes live in `docs/architecture/safety-aware-end-to-end-workflow.md`.
 Safety evaluation framework notes live in `docs/architecture/safety-evaluation-framework.md`.
 
 ## Environment
