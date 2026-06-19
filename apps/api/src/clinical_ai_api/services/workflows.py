@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clinical_ai_agents import SafetyAwareClinicalWorkflowRunner
+from clinical_ai_api.core.agent_container import SAFETY_AWARE_WORKFLOW_EXECUTION_ORDER
 from clinical_ai_api.core.errors import AppError
 from clinical_ai_api.schemas.workflows import (
     GroundedEvidenceWorkflowRequest,
@@ -29,7 +30,7 @@ class AgentsDisabledError(AppError):
 
 
 class EvidenceGroundingWorkflowService:
-    """Runs the evidence-grounding API workflow via SafetyAwareClinicalWorkflowRunner."""
+    """Runs the full clinical reliability pipeline via SafetyAwareClinicalWorkflowRunner."""
 
     def __init__(
         self,
@@ -57,11 +58,13 @@ class EvidenceGroundingWorkflowService:
 
         bind_execution_context(case_id=payload.case_id)
         logger.info(
-            "evidence_workflow_started",
+            "clinical_reliability_workflow_started",
             case_id=payload.case_id,
             request_id=request_id,
             correlation_id=correlation_id,
             retrieval_mode=self._retrieval_mode,
+            runner="SafetyAwareClinicalWorkflowRunner",
+            workflow_execution_order=list(SAFETY_AWARE_WORKFLOW_EXECUTION_ORDER),
         )
 
         try:
@@ -82,47 +85,48 @@ class EvidenceGroundingWorkflowService:
             raise
         except Exception as exc:
             logger.exception(
-                "evidence_workflow_failed",
+                "clinical_reliability_workflow_failed",
                 case_id=payload.case_id,
                 request_id=request_id,
                 correlation_id=correlation_id,
                 error_type=type(exc).__name__,
             )
             raise AppError(
-                code="evidence_workflow_failed",
-                message="Evidence workflow failed before a grounded response could be produced.",
+                code="clinical_reliability_workflow_failed",
+                message="Clinical reliability workflow failed before a response could be produced.",
                 status_code=500,
             ) from exc
 
         if response.status == WorkflowStatus.FAILED:
             logger.error(
-                "evidence_workflow_failed",
+                "clinical_reliability_workflow_failed",
                 workflow_id=response.workflow_id,
                 trace_id=response.trace.trace_id,
                 case_id=payload.case_id,
-                agent_status=agent_output.status,
+                orchestration_status=response.orchestration_status,
+                safety_status=response.safety_status,
             )
             raise AppError(
-                code="evidence_workflow_failed",
-                message="Evidence workflow completed with a failed agent execution.",
+                code="clinical_reliability_workflow_failed",
+                message="Clinical reliability workflow completed with a failed agent execution.",
                 status_code=500,
             )
 
-        bind_execution_context(
-            workflow_id=response.workflow_id,
-            workflow_trace_id=response.trace.trace_id,
-            case_id=payload.case_id,
-        )
         logger.info(
-            "evidence_workflow_completed",
+            "clinical_reliability_workflow_completed",
             workflow_id=response.workflow_id,
             trace_id=response.trace.trace_id,
             case_id=payload.case_id,
             request_id=request_id,
             correlation_id=correlation_id,
+            orchestration_status=response.orchestration_status,
+            safety_status=response.safety_status,
             evidence_count=len(response.evidence),
             citation_count=len(response.citations),
             confidence_score=response.confidence_score,
-            safety_status=agent_output.status,
+            risk_level=response.risk_analysis.get("risk_level"),
+            escalation_indicator_count=len(response.escalation_indicators),
+            approval_required=response.approval_requirements.required,
+            safety_event_count=len(response.safety_events),
         )
         return response

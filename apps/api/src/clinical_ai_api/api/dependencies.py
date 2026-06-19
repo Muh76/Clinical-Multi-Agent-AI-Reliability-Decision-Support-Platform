@@ -5,7 +5,7 @@ from fastapi import Depends, Header, Request
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from clinical_ai_agents import SafetyAwareClinicalWorkflowRunner
+from clinical_ai_agents import AgentWorkflowOrchestrator, SafetyAwareClinicalWorkflowRunner
 from clinical_ai_api.core.agent_container import AgentContainer
 from clinical_ai_api.services.evaluation import EvaluationService
 from clinical_ai_api.services.health import HealthService
@@ -52,7 +52,12 @@ def get_safety_aware_runner(container: AgentContainerDep) -> SafetyAwareClinical
     return container.safety_aware_runner
 
 
+def get_workflow_orchestrator(container: AgentContainerDep) -> AgentWorkflowOrchestrator:
+    return container.orchestrator
+
+
 SafetyAwareRunnerDep = Annotated[SafetyAwareClinicalWorkflowRunner, Depends(get_safety_aware_runner)]
+WorkflowOrchestratorDep = Annotated[AgentWorkflowOrchestrator, Depends(get_workflow_orchestrator)]
 
 
 async def get_cache_service(settings: SettingsDep, redis: RedisDep) -> CacheService:

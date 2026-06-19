@@ -130,6 +130,105 @@ def test_api_v1_evaluation_endpoint() -> None:
     assert response.json()["data"]["status"] == "queued"
 
 
+def test_api_v1_clinical_reliability_workflow_endpoint() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/v1/workflows/clinical-reliability",
+        json={
+            "case_id": "case-1",
+            "patient_context": {
+                "patient_id": "patient-1",
+                "vitals": [
+                    {
+                        "name": "heart_rate",
+                        "value": {"value": 112, "unit": "beats/min"},
+                        "temporal": {"observed_at": "2026-05-20T08:00:00Z"},
+                    }
+                ],
+                "labs": [
+                    {
+                        "test_name": "creatinine",
+                        "value": {"value": 1.8, "unit": "mg/dL"},
+                        "temporal": {"observed_at": "2026-05-20T08:10:00Z"},
+                    }
+                ],
+                "medications": [
+                    {
+                        "medication_name": "vancomycin",
+                        "route": "IV",
+                        "temporal": {"observed_at": "2026-05-20T08:15:00Z"},
+                    }
+                ],
+            },
+            "evidence_query": "creatinine vancomycin renal dosing",
+            "evidence_corpus": [
+                {
+                    "source_id": "local-renal-dosing",
+                    "source_type": "local_policy",
+                    "title": "Renal dosing policy",
+                    "text": (
+                        "Vancomycin dosing should consider renal function "
+                        "and creatinine trends."
+                    ),
+                    "citation_id": "local_policy:local-renal-dosing",
+                    "evidence_level": "guideline",
+                },
+                {
+                    "source_id": "unrelated",
+                    "source_type": "synthetic_protocol",
+                    "title": "Unrelated protocol",
+                    "text": "This protocol discusses discharge paperwork only.",
+                },
+            ],
+            "top_k": 1,
+        },
+    )
+    payload = response.json()["data"]
+    assert response.status_code == 200
+    assert payload["status"] == "completed"
+    assert payload["case_id"] == "case-1"
+    assert payload["patient_id"] == "patient-1"
+    assert payload["orchestration_status"] == "completed"
+    assert payload["safety_status"] in {"completed", "requires_review", "qualified"}
+    assert payload["agent_execution_order"] == [
+        "patient_context",
+        "evidence_retrieval",
+        "risk_analysis",
+    ]
+    assert payload["workflow_execution_order"] == [
+        "patient_context",
+        "evidence_retrieval",
+        "risk_analysis",
+        "hallucination_detection",
+        "evidence_verification",
+        "uncertainty_scoring",
+        "escalation_logic",
+        "human_approval_evaluation",
+    ]
+    assert "risk_level" in payload["risk_analysis"]
+    assert payload["evidence"][0]["source_id"] == "local-renal-dosing"
+    assert payload["citations"][0]["citation_id"] == "local_policy:local-renal-dosing"
+    assert payload["retrieval_metadata"]["reranked"] is True
+    assert payload["trace"]["workflow_id"] == payload["workflow_id"]
+    assert payload["workflow_trace_ids"]["trace_id"] == payload["trace"]["trace_id"]
+    assert payload["confidence_scores"]["workflow"] >= 0.0
+    assert "hallucination_detection" in payload["safety_metadata"]
+    assert "human_approval" in payload["safety_metadata"]
+    assert isinstance(payload["safety_events"], list)
+    assert isinstance(payload["escalation_indicators"], list)
+    assert "required" in payload["approval_requirements"]
+    step_names = [step["name"] for step in payload["trace"]["steps"]]
+    assert step_names[:3] == ["patient_context", "evidence_retrieval", "risk_analysis"]
+    assert step_names[3:] == [
+        "hallucination_detection",
+        "evidence_verification",
+        "uncertainty_scoring",
+        "escalation_logic",
+        "human_approval_evaluation",
+    ]
+    assert len(payload["trace"]["steps"]) == 8
+
+
 def test_api_v1_evidence_workflow_endpoint() -> None:
     client = TestClient(create_app())
     response = client.post(
@@ -185,11 +284,5 @@ def test_api_v1_evidence_workflow_endpoint() -> None:
     )
     payload = response.json()["data"]
     assert response.status_code == 200
-    assert payload["status"] == "completed"
-    assert payload["case_id"] == "case-1"
-    assert payload["patient_id"] == "patient-1"
-    assert payload["evidence"][0]["source_id"] == "local-renal-dosing"
-    assert payload["citations"][0]["citation_id"] == "local_policy:local-renal-dosing"
-    assert payload["retrieval_metadata"]["reranked"] is True
-    assert payload["trace"]["workflow_id"] == payload["workflow_id"]
-    assert len(payload["trace"]["steps"]) >= 5
+    assert payload["workflow_execution_order"][0] == "patient_context"
+    assert payload["safety_metadata"]["safety_critic"]

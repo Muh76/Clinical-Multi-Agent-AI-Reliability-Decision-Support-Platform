@@ -11,6 +11,14 @@ class WorkflowStatus(StrEnum):
     FAILED = "failed"
 
 
+class SafetyAwareStatus(StrEnum):
+    COMPLETED = "completed"
+    FAILED = "failed"
+    BLOCKED = "blocked"
+    REQUIRES_REVIEW = "requires_review"
+    QUALIFIED = "qualified"
+
+
 class WorkflowStepStatus(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
@@ -42,6 +50,7 @@ class GroundedEvidenceWorkflowRequest(BaseModel):
     evidence_corpus: list[EvidenceSourceInput] = Field(default_factory=list)
     top_k: int = Field(default=5, ge=1, le=20)
     enable_reranking: bool = True
+    require_human_approval_checkpoint: bool = True
     metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
 
@@ -110,6 +119,51 @@ class SafetyCriticIntegrationPoint(BaseModel):
     required_inputs: list[str]
 
 
+class WorkflowTraceIdsResponse(BaseModel):
+    workflow_id: str
+    trace_id: str
+    output_id: str | None = None
+    approval_id: str | None = None
+
+
+class AgentConfidenceScore(BaseModel):
+    score: float = Field(ge=0.0, le=1.0)
+    band: str | None = None
+
+
+class ConfidenceScoresResponse(BaseModel):
+    workflow: float = Field(ge=0.0, le=1.0)
+    workflow_band: str | None = None
+    agents: dict[str, AgentConfidenceScore] = Field(default_factory=dict)
+    hallucination_grounding: float | None = Field(default=None, ge=0.0, le=1.0)
+    verification: float | None = Field(default=None, ge=0.0, le=1.0)
+    uncertainty: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class EscalationIndicatorResponse(BaseModel):
+    code: str
+    level: str
+    message: str
+    source: str | None = None
+
+
+class ApprovalRequirementsResponse(BaseModel):
+    required: bool
+    blocking: bool
+    state: str | None = None
+    allow_workflow_resume: bool | None = None
+    allow_output_release: bool | None = None
+
+
+class SafetyMetadataResponse(BaseModel):
+    hallucination_detection: dict[str, Any] = Field(default_factory=dict)
+    evidence_verification: dict[str, Any] = Field(default_factory=dict)
+    uncertainty_scoring: dict[str, Any] = Field(default_factory=dict)
+    escalation: dict[str, Any] = Field(default_factory=dict)
+    human_approval: dict[str, Any] = Field(default_factory=dict)
+    safety_critic: dict[str, Any] = Field(default_factory=dict)
+
+
 class GroundedEvidenceWorkflowResponse(BaseModel):
     workflow_id: str
     status: WorkflowStatus
@@ -122,4 +176,38 @@ class GroundedEvidenceWorkflowResponse(BaseModel):
     retrieval_metadata: RetrievalMetadataResponse
     trace: WorkflowTrace
     safety_critic_integration_points: list[SafetyCriticIntegrationPoint]
+    orchestration_status: str = Field(
+        description="Status from AgentWorkflowOrchestrator (completed, failed, partial, requires_review).",
+    )
+    agent_execution_order: list[str] = Field(
+        default_factory=lambda: ["patient_context", "evidence_retrieval", "risk_analysis"],
+        description="Fixed execution order owned by AgentWorkflowOrchestrator.",
+    )
+    risk_analysis: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Structured output from RiskAnalysisAgent via the orchestrator.",
+    )
+    safety_status: SafetyAwareStatus = Field(
+        description="Status from SafetyAwareClinicalWorkflowRunner after all safety checks.",
+    )
+    workflow_execution_order: list[str] = Field(
+        default_factory=lambda: [
+            "patient_context",
+            "evidence_retrieval",
+            "risk_analysis",
+            "hallucination_detection",
+            "evidence_verification",
+            "uncertainty_scoring",
+            "escalation_logic",
+            "human_approval_evaluation",
+        ],
+        description="Full execution order: agents then safety pipeline.",
+    )
+    confidence_scores: ConfidenceScoresResponse
+    safety_metadata: SafetyMetadataResponse
+    safety_events: list[dict[str, Any]] = Field(default_factory=list)
+    escalation_indicators: list[EscalationIndicatorResponse] = Field(default_factory=list)
+    approval_requirements: ApprovalRequirementsResponse
+    workflow_trace_ids: WorkflowTraceIdsResponse
+    failure_recovery: dict[str, Any] = Field(default_factory=dict)
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

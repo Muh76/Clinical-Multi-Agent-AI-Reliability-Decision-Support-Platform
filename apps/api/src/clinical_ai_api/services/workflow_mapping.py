@@ -4,17 +4,36 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from clinical_ai_agents import SafetyAwareWorkflowOutput, SafetyAwareWorkflowRequest
+from clinical_ai_api.core.agent_container import (
+    ORCHESTRATED_AGENT_EXECUTION_ORDER,
+    SAFETY_AWARE_WORKFLOW_EXECUTION_ORDER,
+)
 from clinical_ai_api.schemas.workflows import (
+    AgentConfidenceScore,
+    ApprovalRequirementsResponse,
+    ConfidenceScoresResponse,
+    EscalationIndicatorResponse,
     EvidenceCitationResponse,
     GroundedEvidenceWorkflowRequest,
     GroundedEvidenceWorkflowResponse,
     RetrievedEvidenceResponse,
     RetrievalMetadataResponse,
+    SafetyAwareStatus,
     SafetyCriticIntegrationPoint,
+    SafetyMetadataResponse,
     WorkflowStatus,
     WorkflowStepStatus,
     WorkflowTrace,
+    WorkflowTraceIdsResponse,
     WorkflowTraceStep,
+)
+
+SAFETY_TRACE_STEPS: tuple[tuple[str, str], ...] = (
+    ("hallucination_detection", "hallucination_risk"),
+    ("evidence_verification", "evidence_verification"),
+    ("uncertainty_scoring", "uncertainty"),
+    ("escalation_logic", "escalation"),
+    ("human_approval_evaluation", "approval"),
 )
 
 
@@ -31,7 +50,7 @@ def to_safety_aware_request(payload: GroundedEvidenceWorkflowRequest) -> SafetyA
         candidate_limit=max(payload.top_k * 4, payload.top_k),
         rerank=payload.enable_reranking,
         metadata=metadata,
-        require_human_approval_checkpoint=True,
+        require_human_approval_checkpoint=payload.require_human_approval_checkpoint,
     )
 
 
@@ -89,6 +108,18 @@ def from_safety_aware_output(
         ),
         trace=trace,
         safety_critic_integration_points=_safety_critic_integration_points(output),
+        orchestration_status=str(base.status),
+        agent_execution_order=list(ORCHESTRATED_AGENT_EXECUTION_ORDER),
+        risk_analysis=output.risk_analysis if isinstance(output.risk_analysis, dict) else {},
+        safety_status=_safety_aware_status(output.status),
+        workflow_execution_order=list(SAFETY_AWARE_WORKFLOW_EXECUTION_ORDER),
+        confidence_scores=_map_confidence_scores(output),
+        safety_metadata=_map_safety_metadata(output),
+        safety_events=output.safety_events,
+        escalation_indicators=_map_escalation_indicators(output),
+        approval_requirements=_map_approval_requirements(output),
+        workflow_trace_ids=_map_workflow_trace_ids(output),
+        failure_recovery=output.failure_recovery if isinstance(output.failure_recovery, dict) else {},
         generated_at=output.generated_at,
     )
 
@@ -99,11 +130,119 @@ def _api_workflow_status(output: SafetyAwareWorkflowOutput) -> WorkflowStatus:
     return WorkflowStatus.COMPLETED
 
 
+def _safety_aware_status(status: str) -> SafetyAwareStatus:
+    try:
+        return SafetyAwareStatus(status)
+    except ValueError:
+        return SafetyAwareStatus.COMPLETED
+
+
 def _workflow_confidence(confidence_scores: dict[str, Any]) -> float:
     value = confidence_scores.get("workflow")
     if isinstance(value, int | float):
         return max(0.0, min(1.0, float(value)))
     return 0.0
+
+
+def _map_confidence_scores(output: SafetyAwareWorkflowOutput) -> ConfidenceScoresResponse:
+    base_scores = output.base_workflow.confidence_scores
+    agents: dict[str, AgentConfidenceScore] = {}
+    raw_agents = base_scores.get("agents", {})
+    if isinstance(raw_agents, dict):
+        for node_id, agent_score in raw_agents.items():
+            if not isinstance(agent_score, dict):
+                continue
+            score = agent_score.get("score")
+            if isinstance(score, int | float):
+                agents[str(node_id)] = AgentConfidenceScore(
+                    score=max(0.0, min(1.0, float(score))),
+                    band=str(agent_score.get("band")) if agent_score.get("band") else None,
+                )
+    return ConfidenceScoresResponse(
+        workflow=_workflow_confidence(base_scores),
+        workflow_band=str(base_scores.get("workflow_band")) if base_scores.get("workflow_band") else None,
+        agents=agents,
+        hallucination_grounding=_optional_float(output.hallucination_risk.get("grounding_confidence")),
+        verification=_optional_float(output.evidence_verification.get("verification_confidence")),
+        uncertainty=_optional_float(output.uncertainty.get("uncertainty_score")),
+    )
+
+
+def _map_safety_metadata(output: SafetyAwareWorkflowOutput) -> SafetyMetadataResponse:
+    return SafetyMetadataResponse(
+        hallucination_detection=output.hallucination_risk if isinstance(output.hallucination_risk, dict) else {},
+        evidence_verification=output.evidence_verification if isinstance(output.evidence_verification, dict) else {},
+        uncertainty_scoring=output.uncertainty if isinstance(output.uncertainty, dict) else {},
+        escalation=output.escalation if isinstance(output.escalation, dict) else {},
+        human_approval=output.approval if isinstance(output.approval, dict) else {},
+        safety_critic=output.safety_critic if isinstance(output.safety_critic, dict) else {},
+    )
+
+
+def _map_approval_requirements(output: SafetyAwareWorkflowOutput) -> ApprovalRequirementsResponse:
+    requirements = output.approval_requirements
+    return ApprovalRequirementsResponse(
+        required=bool(requirements.get("required")),
+        blocking=bool(requirements.get("blocking")),
+        state=str(requirements["state"]) if requirements.get("state") is not None else None,
+        allow_workflow_resume=requirements.get("allow_workflow_resume"),
+        allow_output_release=requirements.get("allow_output_release"),
+    )
+
+
+def _map_workflow_trace_ids(output: SafetyAwareWorkflowOutput) -> WorkflowTraceIdsResponse:
+    trace_ids = output.workflow_trace_ids
+    return WorkflowTraceIdsResponse(
+        workflow_id=str(trace_ids.get("workflow_id") or output.workflow_id),
+        trace_id=str(trace_ids.get("trace_id") or output.trace_id),
+        output_id=output.output_id,
+        approval_id=str(trace_ids.get("approval_id")) if trace_ids.get("approval_id") else None,
+    )
+
+
+def _map_escalation_indicators(output: SafetyAwareWorkflowOutput) -> list[EscalationIndicatorResponse]:
+    indicators: list[EscalationIndicatorResponse] = []
+    seen: set[str] = set()
+
+    for item in output.base_workflow.escalation_indicators:
+        if not isinstance(item, dict):
+            continue
+        code = str(item.get("code") or item.get("indicator_id") or "")
+        if not code or code in seen:
+            continue
+        seen.add(code)
+        indicators.append(
+            EscalationIndicatorResponse(
+                code=code,
+                level=str(item.get("level") or item.get("severity") or "unknown"),
+                message=str(item.get("message") or item.get("summary") or code),
+                source="risk_analysis",
+            )
+        )
+
+    escalation = output.escalation if isinstance(output.escalation, dict) else {}
+    for event in escalation.get("events", []):
+        if not isinstance(event, dict):
+            continue
+        code = str(event.get("code") or event.get("event_type") or "")
+        if not code or code in seen:
+            continue
+        seen.add(code)
+        indicators.append(
+            EscalationIndicatorResponse(
+                code=code,
+                level=str(event.get("severity") or event.get("level") or "unknown"),
+                message=str(event.get("message") or event.get("summary") or code),
+                source="escalation_logic",
+            )
+        )
+    return indicators
+
+
+def _optional_float(value: Any) -> float | None:
+    if isinstance(value, int | float):
+        return max(0.0, min(1.0, float(value)))
+    return None
 
 
 def _retrieval_query_from_output(base_output: Any) -> str | None:
@@ -207,11 +346,18 @@ def _trace_steps_from_output(
     completed_at: datetime,
 ) -> list[WorkflowTraceStep]:
     trace_graph = output.base_workflow.workflow_trace
-    nodes = trace_graph.get("nodes", []) if isinstance(trace_graph, dict) else []
+    raw_nodes = trace_graph.get("nodes", []) if isinstance(trace_graph, dict) else []
+    nodes_by_id = {
+        str(node.get("node_id")): node
+        for node in raw_nodes
+        if isinstance(node, dict) and node.get("node_id")
+    }
+
     steps: list[WorkflowTraceStep] = []
     cursor = started_at
-    for index, node in enumerate(nodes):
-        if not isinstance(node, dict):
+    for node_id in ORCHESTRATED_AGENT_EXECUTION_ORDER:
+        node = nodes_by_id.get(node_id)
+        if node is None:
             continue
         latency_ms = float(node.get("latency_ms", 0.0))
         step_started = cursor
@@ -220,7 +366,7 @@ def _trace_steps_from_output(
         node_status = str(node.get("status", "completed"))
         steps.append(
             WorkflowTraceStep(
-                name=str(node.get("node_id", f"agent_step_{index}")),
+                name=node_id,
                 status=(
                     WorkflowStepStatus.COMPLETED
                     if node_status == "completed"
@@ -230,6 +376,7 @@ def _trace_steps_from_output(
                 completed_at=step_completed,
                 latency_ms=latency_ms,
                 metadata={
+                    "source": "AgentWorkflowOrchestrator",
                     "agent_role": str(node.get("agent_role", "")),
                     "agent_run_id": str(node.get("agent_run_id", "")),
                     "confidence_score": node.get("confidence_score"),
@@ -237,39 +384,41 @@ def _trace_steps_from_output(
             )
         )
 
-    safety_latency = max(
-        0.0,
-        (completed_at - cursor).total_seconds() * 1000 / 2,
-    )
-    steps.append(
-        WorkflowTraceStep(
-            name="safety_critic_evaluation",
-            status=WorkflowStepStatus.COMPLETED,
-            started_at=cursor,
-            completed_at=cursor + timedelta(milliseconds=safety_latency),
-            latency_ms=safety_latency,
-            metadata={
-                "safety_critic_status": output.safety_critic.get("status"),
-                "safety_event_count": len(output.safety_events),
-            },
+    remaining_ms = max(0.0, (completed_at - cursor).total_seconds() * 1000)
+    safety_step_count = len(SAFETY_TRACE_STEPS)
+    per_step_ms = remaining_ms / safety_step_count if safety_step_count else 0.0
+    for step_name, payload_key in SAFETY_TRACE_STEPS:
+        payload = getattr(output, payload_key, {})
+        if not isinstance(payload, dict):
+            payload = {}
+        step_started = cursor
+        step_completed = cursor + timedelta(milliseconds=per_step_ms)
+        cursor = step_completed
+        steps.append(
+            WorkflowTraceStep(
+                name=step_name,
+                status=WorkflowStepStatus.COMPLETED,
+                started_at=step_started,
+                completed_at=step_completed,
+                latency_ms=per_step_ms,
+                metadata={
+                    "source": "SafetyAwareClinicalWorkflowRunner",
+                    "status": _safety_step_status(step_name, output, payload),
+                    "recommended_action": payload.get("recommended_action")
+                    or payload.get("state"),
+                },
+            )
         )
-    )
-    package_started = cursor + timedelta(milliseconds=safety_latency)
-    steps.append(
-        WorkflowTraceStep(
-            name="package_grounded_evidence_response",
-            status=WorkflowStepStatus.COMPLETED,
-            started_at=package_started,
-            completed_at=completed_at,
-            latency_ms=max(0.0, (completed_at - package_started).total_seconds() * 1000),
-            metadata={
-                "workflow_status": output.status,
-                "evidence_count": len(output.retrieved_evidence),
-                "citation_count": len(output.base_workflow.citations),
-            },
-        )
-    )
+
     return steps
+
+
+def _safety_step_status(step_name: str, output: SafetyAwareWorkflowOutput, payload: dict[str, Any]) -> str:
+    if step_name == "human_approval_evaluation":
+        return str(payload.get("state") or output.approval_requirements.get("state") or "evaluated")
+    if step_name == "escalation_logic":
+        return str(payload.get("recommended_action") or output.safety_critic.get("status") or "evaluated")
+    return str(output.safety_critic.get("status") or payload.get("status") or "evaluated")
 
 
 def _safety_critic_integration_points(
@@ -292,5 +441,30 @@ def _safety_critic_integration_points(
             name="recommendation_strength_review",
             status=integration_status,
             required_inputs=["confidence_scores", "source_reliability_scores", "patient_context"],
+        ),
+        SafetyCriticIntegrationPoint(
+            name="hallucination_detection",
+            status="available",
+            required_inputs=["claims", "retrieved_evidence", "citations"],
+        ),
+        SafetyCriticIntegrationPoint(
+            name="evidence_verification",
+            status="available",
+            required_inputs=["claims", "evidence_references"],
+        ),
+        SafetyCriticIntegrationPoint(
+            name="uncertainty_scoring",
+            status="available",
+            required_inputs=["retrieval_confidence", "verification_confidence", "risk_analysis"],
+        ),
+        SafetyCriticIntegrationPoint(
+            name="escalation_logic",
+            status="available",
+            required_inputs=["hallucination_risk", "uncertainty_score", "escalation_policy"],
+        ),
+        SafetyCriticIntegrationPoint(
+            name="human_approval_evaluation",
+            status="available",
+            required_inputs=["escalation_decision", "approval_checkpoint"],
         ),
     ]
