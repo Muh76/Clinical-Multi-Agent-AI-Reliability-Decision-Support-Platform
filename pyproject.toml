@@ -63,6 +63,6 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["apps/api/tests", "packages/agents/tests", "packages/retrieval/tests"]
+testpaths = ["apps/api/tests", "packages/agents/tests", "packages/retrieval/tests", "packages/platform/tests"]
 addopts = "-q --cov=clinical_ai_api --cov=clinical_ai_platform --cov-report=term-missing"
 

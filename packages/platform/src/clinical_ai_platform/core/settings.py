@@ -96,6 +96,7 @@ class AgentSystemSettings(BaseModel):
     run_timeout_seconds: int
     memory_ttl_seconds: int
     workflow_state_ttl_seconds: int
+    persist_workflows: bool
 
 
 class Settings(BaseSettings):
@@ -160,6 +161,7 @@ class Settings(BaseSettings):
     agent_run_timeout_seconds: int = Field(default=900, ge=1)
     agent_memory_ttl_seconds: int = Field(default=86_400, ge=60)
     workflow_state_ttl_seconds: int = Field(default=86_400, ge=60)
+    persist_workflows: bool = True
 
     @field_validator("log_level")
     @classmethod
@@ -297,6 +299,7 @@ class Settings(BaseSettings):
             run_timeout_seconds=self.agent_run_timeout_seconds,
             memory_ttl_seconds=self.agent_memory_ttl_seconds,
             workflow_state_ttl_seconds=self.workflow_state_ttl_seconds,
+            persist_workflows=self.persist_workflows,
         )
 
     def validate_for_runtime(self) -> None:

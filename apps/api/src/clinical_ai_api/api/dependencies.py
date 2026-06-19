@@ -87,12 +87,14 @@ async def get_evaluation_service(session: AsyncSessionDep) -> EvaluationService:
 async def get_workflow_service(
     session: AsyncSessionDep,
     container: AgentContainerDep,
+    settings: SettingsDep,
 ) -> EvidenceGroundingWorkflowService:
     return EvidenceGroundingWorkflowService(
         session=session,
         runner=container.safety_aware_runner,
         agents_enabled=container.agents_enabled,
         retrieval_mode=container.retrieval_mode,
+        persist_workflows=settings.agents.persist_workflows,
     )
 
 

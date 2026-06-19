@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Index, String, Text
+from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
@@ -11,6 +11,7 @@ from clinical_ai_platform.db.base import Base, TimestampMixin, UuidPrimaryKeyMix
 if TYPE_CHECKING:
     from clinical_ai_platform.db.models.audit_log import AuditLog
     from clinical_ai_platform.db.models.patient import Patient
+    from clinical_ai_platform.db.models.workflow_execution import WorkflowExecution
 
 
 class ClinicalCase(UuidPrimaryKeyMixin, TimestampMixin, Base):
@@ -19,8 +20,10 @@ class ClinicalCase(UuidPrimaryKeyMixin, TimestampMixin, Base):
         Index("ix_clinical_cases_patient_id", "patient_id"),
         Index("ix_clinical_cases_status", "status"),
         Index("ix_clinical_cases_safety_status", "safety_status"),
+        UniqueConstraint("external_case_id", name="uq_clinical_cases_external_case_id"),
     )
 
+    external_case_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     patient_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("patients.id", ondelete="CASCADE"),
@@ -40,6 +43,10 @@ class ClinicalCase(UuidPrimaryKeyMixin, TimestampMixin, Base):
     audit_logs: Mapped[list["AuditLog"]] = relationship(
         back_populates="clinical_case",
         cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    workflow_executions: Mapped[list["WorkflowExecution"]] = relationship(
+        back_populates="clinical_case",
         passive_deletes=True,
     )
 
