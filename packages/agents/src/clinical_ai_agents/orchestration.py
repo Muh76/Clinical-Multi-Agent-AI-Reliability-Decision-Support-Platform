@@ -19,6 +19,8 @@ from clinical_ai_agents.evidence_retrieval import EvidenceRetrievalAgent
 from clinical_ai_agents.patient_context import PatientContextAgent
 from clinical_ai_agents.risk_analysis import RiskAnalysisAgent
 from clinical_ai_platform.observability import bind_execution_context, get_logger
+from clinical_ai_retrieval.factory import build_local_retrieval_service
+from clinical_ai_retrieval.retrieval_service import RetrievalService
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -111,10 +113,13 @@ class AgentWorkflowOrchestrator:
         patient_context_agent: ClinicalAgent | None = None,
         evidence_retrieval_agent: ClinicalAgent | None = None,
         risk_analysis_agent: ClinicalAgent | None = None,
+        retrieval_service: RetrievalService | None = None,
     ) -> None:
+        resolved_retrieval_service = retrieval_service or build_local_retrieval_service()
         self._agents: dict[AgentRole, ClinicalAgent] = {
             AgentRole.PATIENT_CONTEXT: patient_context_agent or PatientContextAgent(),
-            AgentRole.EVIDENCE_RETRIEVAL: evidence_retrieval_agent or EvidenceRetrievalAgent(),
+            AgentRole.EVIDENCE_RETRIEVAL: evidence_retrieval_agent
+            or EvidenceRetrievalAgent(retrieval_service=resolved_retrieval_service),
             AgentRole.RISK_ANALYSIS: risk_analysis_agent or RiskAnalysisAgent(),
         }
 

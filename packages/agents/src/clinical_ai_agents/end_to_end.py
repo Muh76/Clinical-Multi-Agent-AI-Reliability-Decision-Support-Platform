@@ -147,6 +147,15 @@ def build_final_output(
     evidence_package = evidence_payload.get("evidence_package", {})
     risk_analysis = risk_payload.get("risk_analysis", {})
     formatted_explainability = attach_formatted_citations(explainable_output)
+    explainability_payload = formatted_explainability.model_dump(mode="json")
+    retrieval_metadata = evidence_package.get("retrieval_metadata", {})
+    if isinstance(retrieval_metadata, dict):
+        backend = retrieval_metadata.get("backend")
+        if backend:
+            explainability_payload["retrieval_backend"] = backend
+        mode = retrieval_metadata.get("mode")
+        if mode:
+            explainability_payload["retrieval_mode"] = mode
     return EndToEndWorkflowOutput(
         output_id=explainable_output.output_id,
         workflow_id=workflow_output.workflow_id,
@@ -162,7 +171,7 @@ def build_final_output(
         confidence_scores=confidence_scores(workflow_output),
         risk_analysis=risk_analysis,
         escalation_indicators=risk_analysis.get("escalation_indicators", []),
-        explainability=formatted_explainability.model_dump(mode="json"),
+        explainability=explainability_payload,
         workflow_trace=trace_graph.model_dump(mode="json"),
         observability=redacted_observability_payload(formatted_explainability),
     )

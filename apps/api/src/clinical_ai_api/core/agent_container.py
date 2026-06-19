@@ -85,7 +85,9 @@ def build_agent_container(settings: Settings) -> AgentContainer:
 
     processor = PatientContextProcessor()
     patient_context_agent = PatientContextAgent(processor=processor)
-    evidence_retrieval_agent = EvidenceRetrievalAgent(retrieval_service=retrieval_service)
+    evidence_retrieval_agent = EvidenceRetrievalAgent(
+        retrieval_service=retrieval_service,
+    )
     risk_analysis_agent = RiskAnalysisAgent()
     orchestrator = AgentWorkflowOrchestrator(
         patient_context_agent=patient_context_agent,
@@ -134,7 +136,9 @@ async def close_agent_container(container: AgentContainer | None) -> None:
 def _build_disabled_container() -> AgentContainer:
     retrieval_service = build_local_retrieval_service()
     orchestrator = AgentWorkflowOrchestrator(
-        evidence_retrieval_agent=EvidenceRetrievalAgent(retrieval_service=retrieval_service),
+        evidence_retrieval_agent=EvidenceRetrievalAgent(
+            retrieval_service=retrieval_service,
+        ),
     )
     runner = SafetyAwareClinicalWorkflowRunner(
         base_runner=EndToEndClinicalReliabilityWorkflowRunner(orchestrator=orchestrator),

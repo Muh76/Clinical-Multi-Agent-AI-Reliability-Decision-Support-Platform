@@ -14,9 +14,8 @@ from clinical_ai_agents.contracts import (
     ConfidenceScore,
 )
 from clinical_ai_platform.observability import get_logger
-from clinical_ai_retrieval.bm25 import tokenize
 from clinical_ai_retrieval.context import EvidenceCorpusItem, build_retrieval_context
-from clinical_ai_retrieval.factory import build_local_retrieval_service
+from clinical_ai_retrieval.packaging import relevance_reasoning_for_item
 from clinical_ai_retrieval.retrieval_service import RetrievalService
 from clinical_ai_retrieval.schemas import (
     EvidencePackage,
@@ -25,7 +24,6 @@ from clinical_ai_retrieval.schemas import (
     MetadataFilter,
     RetrievalMode,
     RetrievalQuery,
-    RetrievalEvidenceItem,
 )
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -78,11 +76,17 @@ class EvidenceRetrievalAgentPackage(BaseModel):
 
 
 class EvidenceRetrievalAgent:
+    """Orchestrates evidence retrieval by delegating to an injected ``RetrievalService``.
+
+    This agent is backend-agnostic: it never performs vector, BM25, or corpus search
+    internally. All retrieval semantics live in ``clinical_ai_retrieval``.
+    """
+
     name = "evidence_retrieval_agent"
     role = AgentRole.EVIDENCE_RETRIEVAL
 
-    def __init__(self, retrieval_service: RetrievalService | None = None) -> None:
-        self._retrieval_service = retrieval_service or build_local_retrieval_service()
+    def __init__(self, *, retrieval_service: RetrievalService) -> None:
+        self._retrieval_service = retrieval_service
 
     async def run(self, agent_input: AgentInput) -> AgentOutput:
         started_at = datetime.now(UTC)
@@ -242,7 +246,7 @@ def build_agent_package(
             source_reliability_score=item.source_reliability_score,
             scoring_components=item.scoring_components,
             metadata=item.metadata.model_dump(mode="json"),
-            relevance_reasoning=relevance_reasoning(item, retrieval_query.query),
+            relevance_reasoning=relevance_reasoning_for_item(item, retrieval_query.query),
         )
         for item in evidence_package.evidence
     ]
@@ -278,7 +282,7 @@ def build_agent_package(
             "candidate_limit": retrieval_query.candidate_limit,
         },
         relevance_reasoning=[
-            relevance_reasoning(item, retrieval_query.query)
+            relevance_reasoning_for_item(item, retrieval_query.query)
             for item in evidence_package.evidence
         ],
     )
@@ -346,18 +350,6 @@ def source_diversity_score(evidence_package: EvidencePackage) -> float:
         return 0.0
     source_types = {item.metadata.source_type for item in evidence_package.evidence}
     return min(1.0, len(source_types) / 3)
-
-
-def relevance_reasoning(item: RetrievalEvidenceItem, query: str) -> str:
-    query_tokens = set(tokenize(query))
-    evidence_tokens = set(tokenize(f"{item.metadata.title or ''} {item.text}"))
-    matched_terms = sorted(query_tokens & evidence_tokens)
-    term_text = ", ".join(matched_terms[:8]) if matched_terms else "no exact lexical terms"
-    return (
-        f"Rank {item.rank} evidence matched {term_text}; "
-        f"source type is {item.metadata.source_type.value}; "
-        f"source reliability score is {item.source_reliability_score:.2f}."
-    )
 
 
 def retrieval_summary(package: EvidenceRetrievalAgentPackage) -> str:

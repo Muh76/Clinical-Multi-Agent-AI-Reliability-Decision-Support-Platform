@@ -180,7 +180,7 @@ def create_approval_workflow(request: ApprovalWorkflowRequest) -> ApprovalWorkfl
     state = ApprovalState.REQUESTED if review_required else ApprovalState.NOT_REQUIRED
     approval_id = f"approval-{uuid4()}"
     context = reviewer_context_package(request)
-    audit_event = audit_event(
+    initial_audit_event = audit_event(
         approval_id=approval_id,
         event_type="approval_requested" if review_required else "approval_not_required",
         from_state=None,
@@ -201,7 +201,7 @@ def create_approval_workflow(request: ApprovalWorkflowRequest) -> ApprovalWorkfl
         checkpoint=request.checkpoint,
         reviewer_context=context,
         human_review_request=request.human_review_request,
-        audit_events=[audit_event],
+        audit_events=[initial_audit_event],
         observability=approval_observability_payload(
             approval_id=approval_id,
             state=state,

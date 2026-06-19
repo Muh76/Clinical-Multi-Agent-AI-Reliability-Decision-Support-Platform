@@ -1,4 +1,5 @@
 from clinical_ai_retrieval.attribution import SourceAttributionTracker
+from clinical_ai_retrieval.bm25 import tokenize
 from clinical_ai_retrieval.schemas import (
     EvidencePackage,
     RetrievalBackend,
@@ -71,6 +72,18 @@ def scoring_components(result: RetrievalResult) -> dict[str, float]:
     if result.rerank_score is not None:
         components["rerank"] = result.rerank_score
     return components
+
+
+def relevance_reasoning_for_item(item: RetrievalEvidenceItem, query: str) -> str:
+    query_tokens = set(tokenize(query))
+    evidence_tokens = set(tokenize(f"{item.metadata.title or ''} {item.text}"))
+    matched_terms = sorted(query_tokens & evidence_tokens)
+    term_text = ", ".join(matched_terms[:8]) if matched_terms else "no exact lexical terms"
+    return (
+        f"Rank {item.rank} evidence matched {term_text}; "
+        f"source type is {item.metadata.source_type.value}; "
+        f"source reliability score is {item.source_reliability_score:.2f}."
+    )
 
 
 def reliability_notes(results: list[RetrievalResult]) -> list[str]:

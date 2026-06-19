@@ -31,18 +31,20 @@ class RetrievalService:
         if isinstance(self._retriever, RoutingRetriever):
             qdrant = self._retriever.qdrant_retriever
             if qdrant is not None:
-                return qdrant.vector_store
-        qdrant = getattr(self._retriever, "vector_store", None)
-        if qdrant is not None:
-            return qdrant
-        return None
+                return getattr(qdrant, "vector_store", None)
+        return getattr(self._retriever, "vector_store", None)
 
     @property
     def embedding_model_name(self) -> str | None:
         if isinstance(self._retriever, RoutingRetriever):
             qdrant = self._retriever.qdrant_retriever
             if qdrant is not None:
-                return qdrant._embedding_provider.model_name
+                provider = getattr(qdrant, "_embedding_provider", None)
+                if provider is not None:
+                    return provider.model_name
+        provider = getattr(self._retriever, "_embedding_provider", None)
+        if provider is not None:
+            return provider.model_name
         return None
 
     async def retrieve_evidence(self, context: RetrievalContext) -> EvidencePackage:

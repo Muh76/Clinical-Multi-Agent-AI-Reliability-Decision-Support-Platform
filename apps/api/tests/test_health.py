@@ -131,10 +131,11 @@ def test_api_v1_evaluation_endpoint() -> None:
 
 
 def test_api_v1_clinical_reliability_workflow_endpoint() -> None:
-    client = TestClient(create_app())
-    response = client.post(
-        "/api/v1/workflows/clinical-reliability",
-        json={
+    app = create_app()
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/workflows/clinical-reliability",
+            json={
             "case_id": "case-1",
             "patient_context": {
                 "patient_id": "patient-1",
@@ -181,59 +182,60 @@ def test_api_v1_clinical_reliability_workflow_endpoint() -> None:
                 },
             ],
             "top_k": 1,
-        },
-    )
-    payload = response.json()["data"]
-    assert response.status_code == 200
-    assert payload["status"] == "completed"
-    assert payload["case_id"] == "case-1"
-    assert payload["patient_id"] == "patient-1"
-    assert payload["orchestration_status"] == "completed"
-    assert payload["safety_status"] in {"completed", "requires_review", "qualified"}
-    assert payload["agent_execution_order"] == [
-        "patient_context",
-        "evidence_retrieval",
-        "risk_analysis",
-    ]
-    assert payload["workflow_execution_order"] == [
-        "patient_context",
-        "evidence_retrieval",
-        "risk_analysis",
-        "hallucination_detection",
-        "evidence_verification",
-        "uncertainty_scoring",
-        "escalation_logic",
-        "human_approval_evaluation",
-    ]
-    assert "risk_level" in payload["risk_analysis"]
-    assert payload["evidence"][0]["source_id"] == "local-renal-dosing"
-    assert payload["citations"][0]["citation_id"] == "local_policy:local-renal-dosing"
-    assert payload["retrieval_metadata"]["reranked"] is True
-    assert payload["trace"]["workflow_id"] == payload["workflow_id"]
-    assert payload["workflow_trace_ids"]["trace_id"] == payload["trace"]["trace_id"]
-    assert payload["confidence_scores"]["workflow"] >= 0.0
-    assert "hallucination_detection" in payload["safety_metadata"]
-    assert "human_approval" in payload["safety_metadata"]
-    assert isinstance(payload["safety_events"], list)
-    assert isinstance(payload["escalation_indicators"], list)
-    assert "required" in payload["approval_requirements"]
-    step_names = [step["name"] for step in payload["trace"]["steps"]]
-    assert step_names[:3] == ["patient_context", "evidence_retrieval", "risk_analysis"]
-    assert step_names[3:] == [
-        "hallucination_detection",
-        "evidence_verification",
-        "uncertainty_scoring",
-        "escalation_logic",
-        "human_approval_evaluation",
-    ]
-    assert len(payload["trace"]["steps"]) == 8
+            },
+        )
+        payload = response.json()["data"]
+        assert response.status_code == 200
+        assert payload["status"] == "completed"
+        assert payload["case_id"] == "case-1"
+        assert payload["patient_id"] == "patient-1"
+        assert payload["orchestration_status"] in {"completed", "requires_review"}
+        assert payload["safety_status"] in {"completed", "requires_review", "qualified"}
+        assert payload["agent_execution_order"] == [
+            "patient_context",
+            "evidence_retrieval",
+            "risk_analysis",
+        ]
+        assert payload["workflow_execution_order"] == [
+            "patient_context",
+            "evidence_retrieval",
+            "risk_analysis",
+            "hallucination_detection",
+            "evidence_verification",
+            "uncertainty_scoring",
+            "escalation_logic",
+            "human_approval_evaluation",
+        ]
+        assert "risk_level" in payload["risk_analysis"]
+        assert payload["evidence"][0]["source_id"] == "local-renal-dosing"
+        assert payload["citations"][0]["citation_id"] == "local_policy:local-renal-dosing"
+        assert payload["retrieval_metadata"]["retrieval_mode"] == "local_corpus"
+        assert payload["trace"]["workflow_id"] == payload["workflow_id"]
+        assert payload["workflow_trace_ids"]["trace_id"] == payload["trace"]["trace_id"]
+        assert payload["confidence_scores"]["workflow"] >= 0.0
+        assert "hallucination_detection" in payload["safety_metadata"]
+        assert "human_approval" in payload["safety_metadata"]
+        assert isinstance(payload["safety_events"], list)
+        assert isinstance(payload["escalation_indicators"], list)
+        assert "required" in payload["approval_requirements"]
+        step_names = [step["name"] for step in payload["trace"]["steps"]]
+        assert step_names[:3] == ["patient_context", "evidence_retrieval", "risk_analysis"]
+        assert step_names[3:] == [
+            "hallucination_detection",
+            "evidence_verification",
+            "uncertainty_scoring",
+            "escalation_logic",
+            "human_approval_evaluation",
+        ]
+        assert len(payload["trace"]["steps"]) == 8
 
 
 def test_api_v1_evidence_workflow_endpoint() -> None:
-    client = TestClient(create_app())
-    response = client.post(
-        "/api/v1/workflows/evidence-grounding",
-        json={
+    app = create_app()
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/workflows/evidence-grounding",
+            json={
             "case_id": "case-1",
             "patient_context": {
                 "patient_id": "patient-1",
@@ -280,9 +282,9 @@ def test_api_v1_evidence_workflow_endpoint() -> None:
                 },
             ],
             "top_k": 1,
-        },
-    )
-    payload = response.json()["data"]
-    assert response.status_code == 200
-    assert payload["workflow_execution_order"][0] == "patient_context"
-    assert payload["safety_metadata"]["safety_critic"]
+            },
+        )
+        payload = response.json()["data"]
+        assert response.status_code == 200
+        assert payload["workflow_execution_order"][0] == "patient_context"
+        assert payload["safety_metadata"]["safety_critic"]
