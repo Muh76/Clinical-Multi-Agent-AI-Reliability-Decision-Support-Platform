@@ -11,6 +11,7 @@ from clinical_ai_retrieval.ingestion import (
     default_processors,
 )
 from clinical_ai_retrieval.qdrant import QdrantVectorStore
+from clinical_ai_retrieval.observability import StructuredRetrievalObserver
 from clinical_ai_retrieval.rerankers import CrossEncoderReranker
 from clinical_ai_retrieval.retrieval_service import RetrievalService
 from clinical_ai_retrieval.retrievers import LocalCorpusRetriever, QdrantRetriever, RoutingRetriever
@@ -42,7 +43,10 @@ def build_qdrant_store(
 
 
 def build_local_retrieval_service() -> RetrievalService:
-    return RetrievalService(retriever=LocalCorpusRetriever())
+    return RetrievalService(
+        retriever=LocalCorpusRetriever(),
+        observer=StructuredRetrievalObserver(),
+    )
 
 
 def build_retrieval_service(
@@ -72,6 +76,7 @@ def build_retrieval_service(
     return RetrievalService(
         retriever=retriever,
         reranker=CrossEncoderReranker(reranker_model_name) if enable_reranker else None,
+        observer=StructuredRetrievalObserver(),
     )
 
 

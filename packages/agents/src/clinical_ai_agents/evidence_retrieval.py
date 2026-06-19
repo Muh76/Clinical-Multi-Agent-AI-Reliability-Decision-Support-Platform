@@ -15,6 +15,7 @@ from clinical_ai_agents.contracts import (
 )
 from clinical_ai_platform.observability import get_logger
 from clinical_ai_retrieval.context import EvidenceCorpusItem, build_retrieval_context
+from clinical_ai_retrieval.observability import langfuse_retrieval_span
 from clinical_ai_retrieval.packaging import relevance_reasoning_for_item
 from clinical_ai_retrieval.retrieval_service import RetrievalService
 from clinical_ai_retrieval.schemas import (
@@ -102,9 +103,23 @@ class EvidenceRetrievalAgent:
         )
         try:
             retrieval_query = build_retrieval_query(agent_input.payload)
-            context = build_retrieval_context(retrieval_query, agent_input.payload)
+            context = build_retrieval_context(retrieval_query, agent_input.payload).model_copy(
+                update={
+                    "workflow_id": agent_input.trace.workflow_id,
+                    "workflow_trace_id": agent_input.trace.trace_id,
+                    "agent_run_id": agent_input.trace.agent_run_id,
+                    "case_id": agent_input.case_id,
+                    "request_id": agent_input.trace.request_id,
+                    "correlation_id": agent_input.trace.correlation_id,
+                }
+            )
             evidence_package = await self._retrieval_service.retrieve_evidence(context)
-            agent_package = build_agent_package(evidence_package, retrieval_query)
+            retrieval_trace = getattr(self._retrieval_service, "last_trace", None)
+            agent_package = build_agent_package(
+                evidence_package,
+                retrieval_query,
+                retrieval_trace=retrieval_trace,
+            )
             confidence = build_confidence(evidence_package, agent_package)
             findings = retrieval_findings(evidence_package)
             status = (
@@ -230,6 +245,8 @@ def build_retrieval_query(payload: dict[str, Any]) -> RetrievalQuery:
 def build_agent_package(
     evidence_package: EvidencePackage,
     retrieval_query: RetrievalQuery,
+    *,
+    retrieval_trace: object | None = None,
 ) -> EvidenceRetrievalAgentPackage:
     evidence = [
         RetrievedEvidenceAgentItem(
@@ -264,23 +281,43 @@ def build_agent_package(
         )
         for citation in evidence_package.citations
     ]
+    retrieval_metadata: dict[str, Any] = {
+        "mode": evidence_package.diagnostics.mode.value,
+        "backend": evidence_package.diagnostics.backend.value,
+        "fusion_strategy": evidence_package.diagnostics.fusion_strategy.value,
+        "dense_result_count": evidence_package.diagnostics.dense_result_count,
+        "bm25_result_count": evidence_package.diagnostics.bm25_result_count,
+        "reranked": evidence_package.diagnostics.reranked,
+        "filters_applied": evidence_package.diagnostics.filters_applied,
+        "reliability_notes": evidence_package.diagnostics.reliability_notes,
+        "limit": retrieval_query.limit,
+        "candidate_limit": retrieval_query.candidate_limit,
+        "retrieval_trace_id": evidence_package.retrieval_trace_id,
+    }
+    if retrieval_trace is not None and hasattr(retrieval_trace, "model_dump"):
+        trace_payload = retrieval_trace.model_dump(mode="json")
+        retrieval_metadata.update(
+            {
+                "retrieval_latency_ms": trace_payload["latency"]["retrieval_ms"],
+                "reranking_latency_ms": trace_payload["latency"]["reranking_ms"],
+                "packaging_latency_ms": trace_payload["latency"]["packaging_ms"],
+                "total_retrieval_latency_ms": trace_payload["latency"]["total_ms"],
+                "retrieved_document_count": trace_payload["retrieved_document_count"],
+                "candidate_count": trace_payload["candidate_count"],
+                "retrieval_confidence": trace_payload["retrieval_confidence"],
+                "evidence_source_types": trace_payload["evidence_source_types"],
+                "collection_name": trace_payload.get("collection_name"),
+                "embedding_model": trace_payload.get("embedding_model"),
+                "qdrant": trace_payload.get("qdrant"),
+                "langfuse_retrieval_span": langfuse_retrieval_span(retrieval_trace),
+            }
+        )
     return EvidenceRetrievalAgentPackage(
         query=evidence_package.query,
         evidence=evidence,
         citations=citations,
         retrieval_confidence=evidence_package.confidence_score,
-        retrieval_metadata={
-            "mode": evidence_package.diagnostics.mode.value,
-            "backend": evidence_package.diagnostics.backend.value,
-            "fusion_strategy": evidence_package.diagnostics.fusion_strategy.value,
-            "dense_result_count": evidence_package.diagnostics.dense_result_count,
-            "bm25_result_count": evidence_package.diagnostics.bm25_result_count,
-            "reranked": evidence_package.diagnostics.reranked,
-            "filters_applied": evidence_package.diagnostics.filters_applied,
-            "reliability_notes": evidence_package.diagnostics.reliability_notes,
-            "limit": retrieval_query.limit,
-            "candidate_limit": retrieval_query.candidate_limit,
-        },
+        retrieval_metadata=retrieval_metadata,
         relevance_reasoning=[
             relevance_reasoning_for_item(item, retrieval_query.query)
             for item in evidence_package.evidence

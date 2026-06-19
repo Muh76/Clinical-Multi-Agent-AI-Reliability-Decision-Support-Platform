@@ -59,6 +59,7 @@ class RecordingQdrantRetriever:
           candidates=scored,
           backend=self.backend,
           dense_result_count=len(scored),
+          retrieval_latency_ms=1.5,
       )
 
 

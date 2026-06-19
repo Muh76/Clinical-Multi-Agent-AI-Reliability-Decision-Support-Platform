@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Evidence retrieval and indexing pipelines"
 requires-python = ">=3.12"
 dependencies = [
+  "clinical-ai-platform",
   "clinical-ai-shared",
   "pydantic>=2.7.0",
   "qdrant-client>=1.9.1",

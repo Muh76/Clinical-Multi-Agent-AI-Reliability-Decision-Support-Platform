@@ -31,6 +31,12 @@ class EvidenceCorpusItem(RetrievalModel):
 class RetrievalContext(RetrievalModel):
     query: RetrievalQuery
     inline_corpus: list[EvidenceDocument] = []
+    workflow_id: str | None = None
+    workflow_trace_id: str | None = None
+    agent_run_id: str | None = None
+    case_id: str | None = None
+    request_id: str | None = None
+    correlation_id: str | None = None
 
     @property
     def has_inline_corpus(self) -> bool:

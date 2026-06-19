@@ -204,6 +204,7 @@ class EvidencePackage(RetrievalModel):
     citations: list[Citation]
     diagnostics: RetrievalDiagnostics
     confidence_score: float = Field(ge=0.0, le=1.0)
+    retrieval_trace_id: str | None = None
 
 
 class IndexingResult(RetrievalModel):

@@ -65,6 +65,7 @@ class WorkflowTraceNode(ObservabilityModel):
     status: str
     latency_ms: float = Field(ge=0.0)
     confidence_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkflowTraceEdge(ObservabilityModel):
@@ -86,6 +87,7 @@ class WorkflowTraceGraph(ObservabilityModel):
     human_review_required: bool = False
     evidence_sources: list[str] = Field(default_factory=list)
     escalation_indicators: list[str] = Field(default_factory=list)
+    retrieval_traces: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class MetricsSink(Protocol):
@@ -262,6 +264,7 @@ def workflow_trace_from_output(workflow_output: Any) -> WorkflowTraceGraph:
             confidence_score=(
                 result.output.confidence.score if result.output is not None else None
             ),
+            metadata=node_trace_metadata(result),
         )
         for result in workflow_output.node_results
     ]
@@ -286,6 +289,7 @@ def workflow_trace_from_output(workflow_output: Any) -> WorkflowTraceGraph:
         human_review_required=workflow_output.human_review_required,
         evidence_sources=workflow_evidence_sources(workflow_output),
         escalation_indicators=workflow_escalation_indicators(workflow_output),
+        retrieval_traces=workflow_retrieval_traces(workflow_output),
     )
 
 
@@ -301,6 +305,27 @@ async def record_workflow_observability(
 
 
 def langfuse_trace_payload(trace: WorkflowTraceGraph) -> dict[str, Any]:
+    spans: list[dict[str, Any]] = []
+    for node in trace.nodes:
+        span: dict[str, Any] = {
+            "id": node.agent_run_id,
+            "name": node.node_id,
+            "metadata": {
+                "agent_role": node.agent_role.value,
+                "status": node.status,
+                "latency_ms": node.latency_ms,
+                "confidence_score": node.confidence_score,
+                **{
+                    key: value
+                    for key, value in node.metadata.items()
+                    if isinstance(value, str | int | float | bool)
+                },
+            },
+        }
+        retrieval_span = node.metadata.get("langfuse_retrieval_span")
+        if isinstance(retrieval_span, dict):
+            span["children"] = [retrieval_span]
+        spans.append(span)
     return {
         "id": trace.trace_id,
         "name": "clinical_ai_agent_workflow",
@@ -314,21 +339,68 @@ def langfuse_trace_payload(trace: WorkflowTraceGraph) -> dict[str, Any]:
             "human_review_required": trace.human_review_required,
             "evidence_sources": trace.evidence_sources,
             "escalation_indicators": trace.escalation_indicators,
+            "retrieval_trace_count": len(trace.retrieval_traces),
         },
-        "spans": [
-            {
-                "id": node.agent_run_id,
-                "name": node.node_id,
-                "metadata": {
-                    "agent_role": node.agent_role.value,
-                    "status": node.status,
-                    "latency_ms": node.latency_ms,
-                    "confidence_score": node.confidence_score,
-                },
-            }
-            for node in trace.nodes
-        ],
+        "spans": spans,
     }
+
+
+def node_trace_metadata(node_result: Any) -> dict[str, Any]:
+    if node_result.output is None or node_result.role != AgentRole.EVIDENCE_RETRIEVAL:
+        return {}
+    retrieval_metadata = (
+        node_result.output.structured_payload.get("evidence_package", {}).get(
+            "retrieval_metadata",
+            {},
+        )
+    )
+    if not isinstance(retrieval_metadata, dict):
+        return {}
+    metadata: dict[str, Any] = {
+        "retrieval_trace_id": retrieval_metadata.get("retrieval_trace_id"),
+        "retrieval_source": retrieval_metadata.get("backend"),
+        "retrieval_mode": retrieval_metadata.get("mode"),
+        "retrieval_latency_ms": retrieval_metadata.get("retrieval_latency_ms"),
+        "reranking_latency_ms": retrieval_metadata.get("reranking_latency_ms"),
+        "retrieved_document_count": retrieval_metadata.get("retrieved_document_count"),
+        "retrieval_confidence": retrieval_metadata.get("retrieval_confidence"),
+        "collection_name": retrieval_metadata.get("collection_name"),
+    }
+    langfuse_span = retrieval_metadata.get("langfuse_retrieval_span")
+    if isinstance(langfuse_span, dict):
+        metadata["langfuse_retrieval_span"] = langfuse_span
+    return metadata
+
+
+def workflow_retrieval_traces(workflow_output: Any) -> list[dict[str, Any]]:
+    traces: list[dict[str, Any]] = []
+    for result in workflow_output.node_results:
+        if result.output is None or result.role != AgentRole.EVIDENCE_RETRIEVAL:
+            continue
+        retrieval_metadata = (
+            result.output.structured_payload.get("evidence_package", {}).get(
+                "retrieval_metadata",
+                {},
+            )
+        )
+        if not isinstance(retrieval_metadata, dict):
+            continue
+        traces.append(
+            {
+                "agent_run_id": result.agent_run_id,
+                "retrieval_trace_id": retrieval_metadata.get("retrieval_trace_id"),
+                "retrieval_source": retrieval_metadata.get("backend"),
+                "retrieval_mode": retrieval_metadata.get("mode"),
+                "query_preview": str(result.output.summary)[:160],
+                "retrieval_latency_ms": retrieval_metadata.get("retrieval_latency_ms"),
+                "reranking_latency_ms": retrieval_metadata.get("reranking_latency_ms"),
+                "retrieved_document_count": retrieval_metadata.get("retrieved_document_count"),
+                "retrieval_confidence": retrieval_metadata.get("retrieval_confidence"),
+                "collection_name": retrieval_metadata.get("collection_name"),
+                "qdrant": retrieval_metadata.get("qdrant"),
+            }
+        )
+    return traces
 
 
 def evidence_sources(output: AgentOutput) -> list[str]:
